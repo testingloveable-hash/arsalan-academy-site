@@ -10,32 +10,140 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as PublicIndexRouteImport } from './routes/_public.index'
+import { Route as PublicTestimonialsRouteImport } from './routes/_public.testimonials'
+import { Route as PublicFaqRouteImport } from './routes/_public.faq'
+import { Route as PublicCoursesRouteImport } from './routes/_public.courses'
+import { Route as PublicContactRouteImport } from './routes/_public.contact'
+import { Route as PublicBlogRouteImport } from './routes/_public.blog'
+import { Route as PublicAboutRouteImport } from './routes/_public.about'
+import { Route as PublicPracticeLessonIdRouteImport } from './routes/_public.practice.$lessonId'
+import { Route as PublicCoursesCourseIdRouteImport } from './routes/_public.courses.$courseId'
 
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PublicIndexRoute = PublicIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicTestimonialsRoute = PublicTestimonialsRouteImport.update({
+  id: '/testimonials',
+  path: '/testimonials',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicFaqRoute = PublicFaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicCoursesRoute = PublicCoursesRouteImport.update({
+  id: '/courses',
+  path: '/courses',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicContactRoute = PublicContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicBlogRoute = PublicBlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicAboutRoute = PublicAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicPracticeLessonIdRoute = PublicPracticeLessonIdRouteImport.update({
+  id: '/practice/$lessonId',
+  path: '/practice/$lessonId',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicCoursesCourseIdRoute = PublicCoursesCourseIdRouteImport.update({
+  id: '/$courseId',
+  path: '/$courseId',
+  getParentRoute: () => PublicCoursesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof PublicRoute
+  '/': typeof PublicIndexRoute
+  '/about': typeof PublicAboutRoute
+  '/blog': typeof PublicBlogRoute
+  '/contact': typeof PublicContactRoute
+  '/courses': typeof PublicCoursesRouteWithChildren
+  '/faq': typeof PublicFaqRoute
+  '/testimonials': typeof PublicTestimonialsRoute
+  '/courses/$courseId': typeof PublicCoursesCourseIdRoute
+  '/practice/$lessonId': typeof PublicPracticeLessonIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof PublicRoute
+  '/about': typeof PublicAboutRoute
+  '/blog': typeof PublicBlogRoute
+  '/contact': typeof PublicContactRoute
+  '/courses': typeof PublicCoursesRouteWithChildren
+  '/faq': typeof PublicFaqRoute
+  '/testimonials': typeof PublicTestimonialsRoute
+  '/': typeof PublicIndexRoute
+  '/courses/$courseId': typeof PublicCoursesCourseIdRoute
+  '/practice/$lessonId': typeof PublicPracticeLessonIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_public': typeof PublicRoute
+  '/_public': typeof PublicRouteWithChildren
+  '/_public/about': typeof PublicAboutRoute
+  '/_public/blog': typeof PublicBlogRoute
+  '/_public/contact': typeof PublicContactRoute
+  '/_public/courses': typeof PublicCoursesRouteWithChildren
+  '/_public/faq': typeof PublicFaqRoute
+  '/_public/testimonials': typeof PublicTestimonialsRoute
+  '/_public/': typeof PublicIndexRoute
+  '/_public/courses/$courseId': typeof PublicCoursesCourseIdRoute
+  '/_public/practice/$lessonId': typeof PublicPracticeLessonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/blog'
+    | '/contact'
+    | '/courses'
+    | '/faq'
+    | '/testimonials'
+    | '/courses/$courseId'
+    | '/practice/$lessonId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/_public'
+  to:
+    | '/about'
+    | '/blog'
+    | '/contact'
+    | '/courses'
+    | '/faq'
+    | '/testimonials'
+    | '/'
+    | '/courses/$courseId'
+    | '/practice/$lessonId'
+  id:
+    | '__root__'
+    | '/_public'
+    | '/_public/about'
+    | '/_public/blog'
+    | '/_public/contact'
+    | '/_public/courses'
+    | '/_public/faq'
+    | '/_public/testimonials'
+    | '/_public/'
+    | '/_public/courses/$courseId'
+    | '/_public/practice/$lessonId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  PublicRoute: typeof PublicRoute
+  PublicRoute: typeof PublicRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -47,11 +155,111 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_public/': {
+      id: '/_public/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/testimonials': {
+      id: '/_public/testimonials'
+      path: '/testimonials'
+      fullPath: '/testimonials'
+      preLoaderRoute: typeof PublicTestimonialsRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/faq': {
+      id: '/_public/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof PublicFaqRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/courses': {
+      id: '/_public/courses'
+      path: '/courses'
+      fullPath: '/courses'
+      preLoaderRoute: typeof PublicCoursesRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/contact': {
+      id: '/_public/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof PublicContactRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/blog': {
+      id: '/_public/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof PublicBlogRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/about': {
+      id: '/_public/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof PublicAboutRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/practice/$lessonId': {
+      id: '/_public/practice/$lessonId'
+      path: '/practice/$lessonId'
+      fullPath: '/practice/$lessonId'
+      preLoaderRoute: typeof PublicPracticeLessonIdRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/courses/$courseId': {
+      id: '/_public/courses/$courseId'
+      path: '/$courseId'
+      fullPath: '/courses/$courseId'
+      preLoaderRoute: typeof PublicCoursesCourseIdRouteImport
+      parentRoute: typeof PublicCoursesRoute
+    }
   }
 }
 
+interface PublicCoursesRouteChildren {
+  PublicCoursesCourseIdRoute: typeof PublicCoursesCourseIdRoute
+}
+
+const PublicCoursesRouteChildren: PublicCoursesRouteChildren = {
+  PublicCoursesCourseIdRoute: PublicCoursesCourseIdRoute,
+}
+
+const PublicCoursesRouteWithChildren = PublicCoursesRoute._addFileChildren(
+  PublicCoursesRouteChildren,
+)
+
+interface PublicRouteChildren {
+  PublicAboutRoute: typeof PublicAboutRoute
+  PublicBlogRoute: typeof PublicBlogRoute
+  PublicContactRoute: typeof PublicContactRoute
+  PublicCoursesRoute: typeof PublicCoursesRouteWithChildren
+  PublicFaqRoute: typeof PublicFaqRoute
+  PublicTestimonialsRoute: typeof PublicTestimonialsRoute
+  PublicIndexRoute: typeof PublicIndexRoute
+  PublicPracticeLessonIdRoute: typeof PublicPracticeLessonIdRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicAboutRoute: PublicAboutRoute,
+  PublicBlogRoute: PublicBlogRoute,
+  PublicContactRoute: PublicContactRoute,
+  PublicCoursesRoute: PublicCoursesRouteWithChildren,
+  PublicFaqRoute: PublicFaqRoute,
+  PublicTestimonialsRoute: PublicTestimonialsRoute,
+  PublicIndexRoute: PublicIndexRoute,
+  PublicPracticeLessonIdRoute: PublicPracticeLessonIdRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  PublicRoute: PublicRoute,
+  PublicRoute: PublicRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
