@@ -9,12 +9,12 @@ export const Route = createFileRoute("/admin")({
 
 const items = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
-  { to: "/admin/courses", label: "Courses", icon: BookOpen },
-  { to: "/admin/lessons", label: "Lessons", icon: ListVideo },
-  { to: "/admin/limits", label: "Practice Limits", icon: Timer },
-  { to: "/admin/students", label: "Students", icon: Users },
-  { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
-  { to: "/admin/settings", label: "Site Settings", icon: Settings },
+  { to: "/admin/courses", label: "Courses", icon: BookOpen, exact: false },
+  { to: "/admin/lessons", label: "Lessons", icon: ListVideo, exact: false },
+  { to: "/admin/limits", label: "Practice Limits", icon: Timer, exact: false },
+  { to: "/admin/students", label: "Students", icon: Users, exact: false },
+  { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote, exact: false },
+  { to: "/admin/settings", label: "Site Settings", icon: Settings, exact: false },
 ] as const;
 
 function AdminLayout() {
