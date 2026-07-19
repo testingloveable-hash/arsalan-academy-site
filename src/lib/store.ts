@@ -73,6 +73,7 @@ interface State {
   lessons: Lesson[];
   testimonials: Testimonial[];
   settings: SiteSettings;
+  certificates: Certificate[];
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -259,18 +260,21 @@ const defaultSettings: SiteSettings = {
 
 const STORAGE_KEY = "arsalan-academy-v1";
 
+const defaults: State = { courses: defaultCourses, lessons: defaultLessons, testimonials: defaultTestimonials, settings: defaultSettings, certificates: [] };
+
 function load(): State {
-  if (typeof window === "undefined") {
-    return { courses: defaultCourses, lessons: defaultLessons, testimonials: defaultTestimonials, settings: defaultSettings };
-  }
+  if (typeof window === "undefined") return defaults;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as State;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<State>;
+      return { ...defaults, ...parsed, certificates: parsed.certificates ?? [] };
+    }
   } catch {}
-  return { courses: defaultCourses, lessons: defaultLessons, testimonials: defaultTestimonials, settings: defaultSettings };
+  return defaults;
 }
 
-let state: State = { courses: defaultCourses, lessons: defaultLessons, testimonials: defaultTestimonials, settings: defaultSettings };
+let state: State = defaults;
 let hydrated = false;
 const listeners = new Set<() => void>();
 
@@ -310,12 +314,17 @@ export function useStore<T>(selector: (s: State) => T): T {
   return useSyncExternalStore(
     store.subscribe,
     () => selector(store.get()),
-    () => selector({ courses: defaultCourses, lessons: defaultLessons, testimonials: defaultTestimonials, settings: defaultSettings }),
+    () => selector(defaults),
   );
 }
 
-// Mutations
 export const actions = {
+  addCertificate: (c: Omit<Certificate, "id">) => {
+    const cert = { ...c, id: uid() };
+    store.set((s) => ({ ...s, certificates: [cert, ...s.certificates] }));
+    return cert;
+  },
+  deleteCertificate: (id: string) => store.set((s) => ({ ...s, certificates: s.certificates.filter((c) => c.id !== id) })),
   addCourse: (c: Omit<Course, "id">) => store.set((s) => ({ ...s, courses: [...s.courses, { ...c, id: uid() }] })),
   updateCourse: (id: string, patch: Partial<Course>) => store.set((s) => ({ ...s, courses: s.courses.map((c) => (c.id === id ? { ...c, ...patch } : c)) })),
   deleteCourse: (id: string) => store.set((s) => ({ ...s, courses: s.courses.filter((c) => c.id !== id), lessons: s.lessons.filter((l) => l.courseId !== id) })),
