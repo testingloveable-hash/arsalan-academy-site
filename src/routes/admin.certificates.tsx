@@ -176,6 +176,7 @@ function CertificatesAdmin() {
     if (!guard() || busy) return;
     setBusy("docx");
     try {
+      const {
         Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
         PageOrientation, BorderStyle,
       } = await import("docx");
