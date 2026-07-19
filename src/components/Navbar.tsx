@@ -34,9 +34,12 @@ export function Navbar() {
             </Link>
           ))}
         </nav>
-        <div className="hidden lg:block">
+        <div className="hidden items-center gap-2 lg:flex">
+          <Button asChild variant="ghost">
+            <Link to="/login">Login</Link>
+          </Button>
           <Button asChild className="bg-primary hover:bg-primary/90">
-            <Link to="/courses">Explore Courses</Link>
+            <Link to="/signup">Sign Up</Link>
           </Button>
         </div>
         <button
