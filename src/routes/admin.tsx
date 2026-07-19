@@ -1,9 +1,13 @@
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { LayoutDashboard, BookOpen, ListVideo, Timer, Users, MessageSquareQuote, Settings, ExternalLink, Award } from "lucide-react";
+import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { LayoutDashboard, BookOpen, ListVideo, Timer, Users, MessageSquareQuote, Settings, ExternalLink, Award, LogOut } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
+  ssr: false,
   head: () => ({ meta: [{ title: "Admin — Arsalan Academy" }, { name: "robots", content: "noindex" }] }),
 });
 
