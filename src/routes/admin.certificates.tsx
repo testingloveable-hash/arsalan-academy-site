@@ -130,15 +130,32 @@ function CertificatesAdmin() {
     return local;
   };
 
+  const [busy, setBusy] = useState<null | "pdf" | "docx" | "print">(null);
+
   const captureCanvas = async () => {
     const { default: html2canvas } = await import("html2canvas");
-    const node = certRef.current;
-    if (!node) throw new Error("Certificate not rendered");
-    return html2canvas(node, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false });
+    const node = document.getElementById("certificate-canvas") as HTMLElement | null;
+    if (!node) throw new Error("Certificate preview not found in DOM");
+    // Wait for web fonts (Playfair, Great Vibes, Inter) so the capture matches the preview
+    if ((document as any).fonts?.ready) {
+      try { await (document as any).fonts.ready; } catch { /* ignore */ }
+    }
+    return html2canvas(node, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      width: 1123,
+      height: 794,
+      windowWidth: 1123,
+      windowHeight: 794,
+    });
   };
 
   const handlePdf = async () => {
-    if (!guard()) return;
+    if (!guard() || busy) return;
+    setBusy("pdf");
     try {
       const canvas = await captureCanvas();
       const { jsPDF } = await import("jspdf");
@@ -147,8 +164,11 @@ function CertificatesAdmin() {
       pdf.save(`${fileBase(studentName, certificateNumber)}.pdf`);
       await persist();
       toast.success("PDF downloaded");
-    } catch (e) {
-      console.error(e); toast.error("Could not export PDF");
+    } catch (e: any) {
+      console.error("[Certificate PDF] failed:", e);
+      toast.error(`Could not export PDF: ${e?.message ?? "unknown error"}`);
+    } finally {
+      setBusy(null);
     }
   };
 
