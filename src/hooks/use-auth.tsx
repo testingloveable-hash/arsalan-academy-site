@@ -23,12 +23,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function loadRoleAndProfile(userId: string) {
-    const [{ data: roles }, { data: profile }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
-    ]);
-    const isAdmin = roles?.some((r: { role: string }) => r.role === "admin");
-    setRole(isAdmin ? "admin" : roles && roles.length > 0 ? "student" : "student");
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, role")
+      .eq("id", userId)
+      .maybeSingle();
+    const r = (profile as { role?: string } | null)?.role;
+    setRole(r === "admin" ? "admin" : "student");
     setFullName(profile?.full_name ?? "");
   }
 
