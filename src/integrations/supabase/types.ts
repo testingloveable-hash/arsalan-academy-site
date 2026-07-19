@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      certificates: {
+        Row: {
+          completion_date: string
+          course_id: string | null
+          course_title: string
+          created_at: string
+          created_by: string | null
+          id: string
+          issued_at: string
+          number: string
+          student_name: string
+        }
+        Insert: {
+          completion_date: string
+          course_id?: string | null
+          course_title: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          issued_at?: string
+          number: string
+          student_name: string
+        }
+        Update: {
+          completion_date?: string
+          course_id?: string | null
+          course_title?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          issued_at?: string
+          number?: string
+          student_name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
