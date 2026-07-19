@@ -136,22 +136,33 @@ function CertificatesAdmin() {
     const { default: html2canvas } = await import("html2canvas");
     const node = document.getElementById("certificate-canvas") as HTMLElement | null;
     if (!node) throw new Error("Certificate preview not found in DOM");
-    // Wait for web fonts (Playfair, Great Vibes, Inter) so the capture matches the preview
     if ((document as any).fonts?.ready) {
       try { await (document as any).fonts.ready; } catch { /* ignore */ }
     }
-    return html2canvas(node, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-      width: 1123,
-      height: 794,
-      windowWidth: 1123,
-      windowHeight: 794,
-    });
+    // The visible preview is CSS-scaled (transform: scale). Reset it during capture
+    // so html2canvas renders the certificate at its native 1123×794 resolution.
+    const prevTransform = node.style.transform;
+    const prevOrigin = node.style.transformOrigin;
+    node.style.transform = "none";
+    node.style.transformOrigin = "top left";
+    try {
+      return await html2canvas(node, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        width: 1123,
+        height: 794,
+        windowWidth: 1123,
+        windowHeight: 794,
+      });
+    } finally {
+      node.style.transform = prevTransform;
+      node.style.transformOrigin = prevOrigin;
+    }
   };
+
 
   const handlePdf = async () => {
     if (!guard() || busy) return;
