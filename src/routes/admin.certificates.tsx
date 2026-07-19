@@ -173,8 +173,8 @@ function CertificatesAdmin() {
   };
 
   const handleDocx = async () => {
-    if (!guard()) return;
-    try {
+    if (!guard() || busy) return;
+    setBusy("docx");
       const {
         Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
         PageOrientation, BorderStyle,
