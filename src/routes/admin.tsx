@@ -23,6 +23,24 @@ const items = [
 ] as const;
 
 function AdminLayout() {
+  const nav = useNavigate();
+  const { session, role, loading, signOut } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session) nav({ to: "/login", replace: true });
+    else if (role && role !== "admin") nav({ to: "/dashboard", replace: true });
+  }, [loading, session, role, nav]);
+
+  async function handleLogout() {
+    await signOut();
+    nav({ to: "/login", replace: true });
+  }
+
+  if (loading || !session || (role && role !== "admin")) {
+    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading…</div>;
+  }
+
   return (
     <div className="flex min-h-screen bg-muted/30">
       <aside className="hidden w-64 shrink-0 flex-col bg-[color:var(--brand-navy)] text-white md:flex">
@@ -45,10 +63,13 @@ function AdminLayout() {
             </Link>
           ))}
         </nav>
-        <div className="border-t border-white/10 p-3">
+        <div className="space-y-1 border-t border-white/10 p-3">
           <Link to="/" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-white/60 hover:bg-white/10 hover:text-white">
             <ExternalLink className="h-3.5 w-3.5" /> View public site
           </Link>
+          <button onClick={handleLogout} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-white/60 hover:bg-white/10 hover:text-white">
+            <LogOut className="h-3.5 w-3.5" /> Logout
+          </button>
         </div>
       </aside>
 
@@ -58,8 +79,11 @@ function AdminLayout() {
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Arsalan Academy</p>
             <h1 className="text-lg font-semibold">Admin Dashboard</h1>
           </div>
-          <div className="flex items-center gap-2 md:hidden">
-            <Logo className="h-8 w-auto" />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleLogout} className="md:hidden">
+              <LogOut className="h-4 w-4" />
+            </Button>
+            <Logo className="h-8 w-auto md:hidden" />
           </div>
         </header>
         <nav className="flex gap-1 overflow-x-auto border-b bg-background p-2 md:hidden">
