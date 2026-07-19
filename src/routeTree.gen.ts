@@ -19,6 +19,7 @@ import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminLimitsRouteImport } from './routes/admin.limits'
 import { Route as AdminLessonsRouteImport } from './routes/admin.lessons'
 import { Route as AdminCoursesRouteImport } from './routes/admin.courses'
+import { Route as AdminCertificatesRouteImport } from './routes/admin.certificates'
 import { Route as PublicTestimonialsRouteImport } from './routes/_public.testimonials'
 import { Route as PublicFaqRouteImport } from './routes/_public.faq'
 import { Route as PublicCoursesRouteImport } from './routes/_public.courses'
@@ -77,6 +78,11 @@ const AdminCoursesRoute = AdminCoursesRouteImport.update({
   path: '/courses',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCertificatesRoute = AdminCertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
+  getParentRoute: () => AdminRoute,
+} as any)
 const PublicTestimonialsRoute = PublicTestimonialsRouteImport.update({
   id: '/testimonials',
   path: '/testimonials',
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/courses': typeof PublicCoursesRouteWithChildren
   '/faq': typeof PublicFaqRoute
   '/testimonials': typeof PublicTestimonialsRoute
+  '/admin/certificates': typeof AdminCertificatesRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/lessons': typeof AdminLessonsRoute
   '/admin/limits': typeof AdminLimitsRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/courses': typeof PublicCoursesRouteWithChildren
   '/faq': typeof PublicFaqRoute
   '/testimonials': typeof PublicTestimonialsRoute
+  '/admin/certificates': typeof AdminCertificatesRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/lessons': typeof AdminLessonsRoute
   '/admin/limits': typeof AdminLimitsRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/_public/courses': typeof PublicCoursesRouteWithChildren
   '/_public/faq': typeof PublicFaqRoute
   '/_public/testimonials': typeof PublicTestimonialsRoute
+  '/admin/certificates': typeof AdminCertificatesRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/lessons': typeof AdminLessonsRoute
   '/admin/limits': typeof AdminLimitsRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/faq'
     | '/testimonials'
+    | '/admin/certificates'
     | '/admin/courses'
     | '/admin/lessons'
     | '/admin/limits'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/faq'
     | '/testimonials'
+    | '/admin/certificates'
     | '/admin/courses'
     | '/admin/lessons'
     | '/admin/limits'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/_public/courses'
     | '/_public/faq'
     | '/_public/testimonials'
+    | '/admin/certificates'
     | '/admin/courses'
     | '/admin/lessons'
     | '/admin/limits'
@@ -311,6 +323,13 @@ declare module '@tanstack/react-router' {
       path: '/courses'
       fullPath: '/admin/courses'
       preLoaderRoute: typeof AdminCoursesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/certificates': {
+      id: '/admin/certificates'
+      path: '/certificates'
+      fullPath: '/admin/certificates'
+      preLoaderRoute: typeof AdminCertificatesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_public/testimonials': {
@@ -410,6 +429,7 @@ const PublicRouteWithChildren =
   PublicRoute._addFileChildren(PublicRouteChildren)
 
 interface AdminRouteChildren {
+  AdminCertificatesRoute: typeof AdminCertificatesRoute
   AdminCoursesRoute: typeof AdminCoursesRoute
   AdminLessonsRoute: typeof AdminLessonsRoute
   AdminLimitsRoute: typeof AdminLimitsRoute
@@ -420,6 +440,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminCertificatesRoute: AdminCertificatesRoute,
   AdminCoursesRoute: AdminCoursesRoute,
   AdminLessonsRoute: AdminLessonsRoute,
   AdminLimitsRoute: AdminLimitsRoute,
