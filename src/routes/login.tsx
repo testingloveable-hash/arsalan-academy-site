@@ -32,13 +32,32 @@ function LoginPage() {
     e.preventDefault();
     setErr("");
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setErr("Invalid email or password.");
+      console.error("[Login] signInWithPassword error:", error);
+      setBusy(false);
+      setErr(`${error.message}${error.status ? ` (status ${error.status})` : ""}`);
       return;
     }
-    // auth listener will populate role; redirect via effect
+    if (!data.user) {
+      setBusy(false);
+      setErr("Login succeeded but no user was returned.");
+      return;
+    }
+    const { data: profile, error: profileErr } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+    setBusy(false);
+    if (profileErr) {
+      console.error("[Login] profile fetch error:", profileErr);
+      setErr(`Signed in, but failed to load profile: ${profileErr.message}`);
+      return;
+    }
+    console.log("[Login] profile:", profile);
+    if (profile?.role === "admin") nav({ to: "/admin", replace: true });
+    else nav({ to: "/dashboard", replace: true });
   }
 
   return (
