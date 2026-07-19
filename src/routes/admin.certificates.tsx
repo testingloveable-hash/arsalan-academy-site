@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Award, Download, FileText, Printer, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { actions, useStore, type Certificate as Cert } from "@/lib/store";
 import { Certificate, type CertificateData } from "@/components/Certificate";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/certificates")({
   component: CertificatesAdmin,
@@ -17,12 +18,25 @@ export const Route = createFileRoute("/admin/certificates")({
 });
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
+const pad4 = (n: number) => String(n).padStart(4, "0");
+const safe = (s: string) => (s || "").replace(/[^a-z0-9\-_.]+/gi, "_").replace(/^_+|_+$/g, "") || "Certificate";
+const fileBase = (name: string, num: string) => `Certificate-${safe(name)}-${safe(num)}`;
 
-function pad4(n: number) { return String(n).padStart(4, "0"); }
+type DBCert = {
+  id: string;
+  number: string;
+  student_name: string;
+  course_id: string | null;
+  course_title: string;
+  completion_date: string;
+  issued_at: string;
+};
 
 function CertificatesAdmin() {
   const courses = useStore((s) => s.courses);
-  const certificates = useStore((s) => s.certificates);
+  const localCerts = useStore((s) => s.certificates);
+  const [remote, setRemote] = useState<Cert[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [studentName, setStudentName] = useState("");
   const [courseId, setCourseId] = useState<string>(courses[0]?.id ?? "");
@@ -30,13 +44,49 @@ function CertificatesAdmin() {
 
   const course = courses.find((c) => c.id === courseId) ?? courses[0];
 
+  const loadRemote = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("certificates" as never)
+      .select("*")
+      .order("issued_at", { ascending: false });
+    if (error) {
+      console.warn("Could not load certificates from cloud:", error.message);
+    } else if (data) {
+      setRemote(
+        (data as unknown as DBCert[]).map((r) => ({
+          id: r.id,
+          number: r.number,
+          studentName: r.student_name,
+          courseId: r.course_id ?? "",
+          courseTitle: r.course_title,
+          completionDate: r.completion_date,
+          issuedAt: r.issued_at,
+        })),
+      );
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { void loadRemote(); }, []);
+
+  // Merge remote + local (dedupe by number)
+  const certificates: Cert[] = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Cert[] = [];
+    for (const c of [...remote, ...localCerts]) {
+      if (seen.has(c.number)) continue;
+      seen.add(c.number);
+      out.push(c);
+    }
+    return out;
+  }, [remote, localCerts]);
+
   const certificateNumber = useMemo(() => {
     if (!course) return "AA-XXXX-0000-0000";
     const year = (completionDate ? new Date(completionDate) : new Date()).getFullYear();
     const code = course.code || "GEN";
-    const existing = certificates.filter(
-      (c) => c.number.startsWith(`AA-${code}-${year}-`),
-    ).length;
+    const existing = certificates.filter((c) => c.number.startsWith(`AA-${code}-${year}-`)).length;
     return `AA-${code}-${year}-${pad4(existing + 1)}`;
   }, [course, completionDate, certificates]);
 
@@ -49,23 +99,35 @@ function CertificatesAdmin() {
 
   const certRef = useRef<HTMLDivElement>(null);
 
-  const persistIfNew = (): Cert => {
-    const existing = certificates.find((c) => c.number === certificateNumber);
-    if (existing) return existing;
-    return actions.addCertificate({
+  const guard = () => {
+    if (!studentName.trim()) { toast.error("Enter a student name first."); return false; }
+    if (!course) { toast.error("Pick a course first."); return false; }
+    return true;
+  };
+
+  const persist = async (): Promise<Cert> => {
+    const local = actions.addCertificate({
       number: certificateNumber,
-      studentName: studentName || "Student Name",
+      studentName: studentName.trim(),
       courseId: course?.id ?? "",
       courseTitle: course?.title ?? "",
       completionDate,
       issuedAt: new Date().toISOString(),
     });
-  };
-
-  const guard = () => {
-    if (!studentName.trim()) { toast.error("Enter a student name first."); return false; }
-    if (!course) { toast.error("Pick a course first."); return false; }
-    return true;
+    const { error } = await supabase.from("certificates" as never).insert({
+      number: certificateNumber,
+      student_name: studentName.trim(),
+      course_id: course?.id ?? null,
+      course_title: course?.title ?? "",
+      completion_date: completionDate,
+    } as never);
+    if (error && !/duplicate/i.test(error.message)) {
+      console.warn("Could not save certificate to cloud:", error.message);
+      toast.warning("Saved locally — cloud save failed.");
+    } else {
+      void loadRemote();
+    }
+    return local;
   };
 
   const captureCanvas = async () => {
@@ -78,12 +140,12 @@ function CertificatesAdmin() {
   const handlePdf = async () => {
     if (!guard()) return;
     try {
-      persistIfNew();
       const canvas = await captureCanvas();
       const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1123, 794], compress: true });
       pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, 1123, 794);
-      pdf.save(`${certificateNumber}.pdf`);
+      pdf.save(`${fileBase(studentName, certificateNumber)}.pdf`);
+      await persist();
       toast.success("PDF downloaded");
     } catch (e) {
       console.error(e); toast.error("Could not export PDF");
@@ -93,40 +155,89 @@ function CertificatesAdmin() {
   const handleDocx = async () => {
     if (!guard()) return;
     try {
-      persistIfNew();
-      const canvas = await captureCanvas();
-      const blobPng: Blob = await new Promise((res, rej) =>
-        canvas.toBlob((b) => (b ? res(b) : rej(new Error("no blob"))), "image/png"),
-      );
-      const bytes = new Uint8Array(await blobPng.arrayBuffer());
-      const { Document, Packer, Paragraph, ImageRun, PageOrientation } = await import("docx");
+      const {
+        Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
+        PageOrientation, BorderStyle,
+      } = await import("docx");
+
+      const hr = new Paragraph({
+        border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: "1E5AFF", space: 1 } },
+      });
+
+      const label = (text: string) =>
+        new Paragraph({
+          spacing: { before: 200, after: 40 },
+          children: [new TextRun({ text, bold: true, size: 20, color: "1E5AFF", allCaps: true })],
+        });
+      const value = (text: string) =>
+        new Paragraph({ children: [new TextRun({ text, size: 28, color: "0A1E3D" })] });
+
       const doc = new Document({
+        creator: "Arsalan Academy",
+        title: `Certificate ${certificateNumber}`,
+        styles: { default: { document: { run: { font: "Calibri", size: 22 } } } },
         sections: [
           {
             properties: {
               page: {
                 size: { width: 16838, height: 11906, orientation: PageOrientation.LANDSCAPE },
-                margin: { top: 360, right: 360, bottom: 360, left: 360 },
+                margin: { top: 1000, right: 1000, bottom: 1000, left: 1000 },
               },
             },
             children: [
               new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 100 },
+                children: [new TextRun({ text: "ARSALAN ACADEMY", bold: true, size: 28, color: "1E5AFF", allCaps: true })],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                heading: HeadingLevel.TITLE,
+                spacing: { after: 100 },
+                children: [new TextRun({ text: "Certificate of Completion", bold: true, size: 56, color: "0A1E3D" })],
+              }),
+              hr,
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 400, after: 200 },
+                children: [new TextRun({ text: "This certificate is proudly presented to", size: 24, color: "444444" })],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 300 },
+                children: [new TextRun({ text: studentName, bold: true, italics: true, size: 60, color: "0A1E3D" })],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 400 },
                 children: [
-                  new ImageRun({
-                    type: "png",
-                    data: bytes,
-                    transformation: { width: 1050, height: 742 },
-                    altText: { title: "Certificate", description: certificateNumber, name: "certificate" },
-                  }),
+                  new TextRun({ text: "for successfully completing the course ", size: 24 }),
+                  new TextRun({ text: `"${course?.title ?? ""}"`, bold: true, size: 24, color: "0A1E3D" }),
+                  new TextRun({ text: " at Arsalan Academy.", size: 24 }),
                 ],
               }),
+              hr,
+              label("Certificate Number"),
+              value(certificateNumber),
+              label("Course"),
+              value(course?.title ?? ""),
+              label("Date of Completion"),
+              value(new Date(completionDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })),
+              new Paragraph({
+                spacing: { before: 600, after: 0 },
+                children: [new TextRun({ text: "Arsalan Munir", bold: true, italics: true, size: 32, color: "0A1E3D" })],
+              }),
+              new Paragraph({ children: [new TextRun({ text: "Founder & Lead Trainer", size: 22, color: "0A1E3D" })] }),
+              new Paragraph({ children: [new TextRun({ text: "CELTA Qualified", size: 20, color: "1E5AFF" })] }),
             ],
           },
         ],
       });
+
       const { saveAs } = await import("file-saver");
-      const out = await Packer.toBlob(doc);
-      saveAs(out, `${certificateNumber}.docx`);
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `${fileBase(studentName, certificateNumber)}.docx`);
+      await persist();
       toast.success("DOCX downloaded");
     } catch (e) {
       console.error(e); toast.error("Could not export DOCX");
@@ -136,31 +247,48 @@ function CertificatesAdmin() {
   const handlePrint = async () => {
     if (!guard()) return;
     try {
-      persistIfNew();
-      const canvas = await captureCanvas();
-      const url = canvas.toDataURL("image/png");
-      const w = window.open("", "_blank", "width=1200,height=850");
-      if (!w) { toast.error("Popup blocked"); return; }
-      w.document.write(`<!doctype html><html><head><title>${certificateNumber}</title>
-        <style>@page{size:A4 landscape;margin:0} html,body{margin:0;padding:0}
-        img{width:100%;height:100vh;object-fit:contain;display:block}</style></head>
-        <body><img src="${url}" onload="setTimeout(()=>{window.print();},250)"/></body></html>`);
-      w.document.close();
+      document.body.classList.add("printing-certificate");
+      await new Promise((r) => setTimeout(r, 50));
+      window.print();
+      setTimeout(() => document.body.classList.remove("printing-certificate"), 500);
+      await persist();
     } catch (e) {
-      console.error(e); toast.error("Could not open print view");
+      console.error(e); toast.error("Could not print");
+      document.body.classList.remove("printing-certificate");
     }
   };
 
-  const redownload = async (c: Cert) => {
+  const redownload = (c: Cert) => {
     setStudentName(c.studentName);
     if (courses.some((x) => x.id === c.courseId)) setCourseId(c.courseId);
     setCompletionDate(c.completionDate);
     toast("Loaded into preview — use Download PDF/DOCX/Print above.");
   };
 
+  const remove = async (c: Cert) => {
+    if (!confirm("Delete this certificate record?")) return;
+    actions.deleteCertificate(c.id);
+    const { error } = await supabase.from("certificates" as never).delete().eq("number", c.number);
+    if (error) toast.error(error.message); else void loadRemote();
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <style>{`
+        @media print {
+          body.printing-certificate * { visibility: hidden !important; }
+          body.printing-certificate #certificate-print-area,
+          body.printing-certificate #certificate-print-area * { visibility: visible !important; }
+          body.printing-certificate #certificate-print-area {
+            position: fixed !important; inset: 0 !important; margin: 0 !important; padding: 0 !important;
+            width: 100vw !important; height: 100vh !important; background: white !important;
+            display: flex; align-items: center; justify-content: center;
+          }
+          @page { size: A4 landscape; margin: 0; }
+        }
+      `}</style>
+
+      <div className="flex items-center gap-3 no-print">
         <Award className="h-6 w-6 text-[color:var(--brand-blue)]" />
         <div>
           <h2 className="text-2xl font-bold">Certificate Generator</h2>
@@ -169,7 +297,7 @@ function CertificatesAdmin() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
-        <Card className="space-y-4 p-5">
+        <Card className="space-y-4 p-5 no-print">
           <div>
             <Label htmlFor="student">Student Name</Label>
             <Input id="student" value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder="e.g. Ayesha Khan" />
@@ -203,23 +331,23 @@ function CertificatesAdmin() {
         </Card>
 
         <Card className="overflow-hidden bg-muted/40 p-4">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between no-print">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Live preview</p>
             <p className="text-[10px] text-muted-foreground">A4 landscape · 1123 × 794</p>
           </div>
-          <div className="overflow-auto rounded-md border bg-white p-2">
+          <div id="certificate-print-area" className="overflow-auto rounded-md border bg-white p-2">
             <ResponsiveCertificate data={data} innerRef={certRef} />
           </div>
         </Card>
       </div>
 
-      <Card className="p-5">
+      <Card className="p-5 no-print">
         <div className="mb-3 flex items-center justify-between">
           <div>
             <h3 className="font-semibold">Certificate History</h3>
             <p className="text-xs text-muted-foreground">All certificates issued from this dashboard.</p>
           </div>
-          <span className="text-xs text-muted-foreground">{certificates.length} total</span>
+          <span className="text-xs text-muted-foreground">{loading ? "Loading…" : `${certificates.length} total`}</span>
         </div>
         {certificates.length === 0 ? (
           <p className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -247,7 +375,7 @@ function CertificatesAdmin() {
                     <Button size="sm" variant="outline" onClick={() => redownload(c)}>
                       <Download className="mr-1 h-3.5 w-3.5" /> Re-download
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => { if (confirm("Delete this certificate record?")) actions.deleteCertificate(c.id); }}>
+                    <Button size="sm" variant="ghost" onClick={() => remove(c)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
@@ -262,7 +390,6 @@ function CertificatesAdmin() {
 }
 
 function ResponsiveCertificate({ data, innerRef }: { data: CertificateData; innerRef: React.Ref<HTMLDivElement> }) {
-  // Scale to fit typical container widths; certificate stays crisp because we scale a fixed 1123px canvas.
   return (
     <div className="w-full">
       <div className="hidden xl:block"><Certificate ref={innerRef} data={data} scale={0.75} /></div>
