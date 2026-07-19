@@ -260,22 +260,29 @@ function CertificatesAdmin() {
       saveAs(blob, `${fileBase(studentName, certificateNumber)}.docx`);
       await persist();
       toast.success("DOCX downloaded");
-    } catch (e) {
-      console.error(e); toast.error("Could not export DOCX");
+    } catch (e: any) {
+      console.error("[Certificate DOCX] failed:", e);
+      toast.error(`Could not export DOCX: ${e?.message ?? "unknown error"}`);
+    } finally {
+      setBusy(null);
     }
   };
 
   const handlePrint = async () => {
-    if (!guard()) return;
+    if (!guard() || busy) return;
+    setBusy("print");
     try {
       document.body.classList.add("printing-certificate");
       await new Promise((r) => setTimeout(r, 50));
       window.print();
       setTimeout(() => document.body.classList.remove("printing-certificate"), 500);
       await persist();
-    } catch (e) {
-      console.error(e); toast.error("Could not print");
+    } catch (e: any) {
+      console.error("[Certificate Print] failed:", e);
+      toast.error(`Could not print: ${e?.message ?? "unknown error"}`);
       document.body.classList.remove("printing-certificate");
+    } finally {
+      setBusy(null);
     }
   };
 
