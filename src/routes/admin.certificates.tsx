@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Award, Download, FileText, Printer, Trash2 } from "lucide-react";
+import { Award, Download, FileText, Loader2, Printer, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,15 +130,43 @@ function CertificatesAdmin() {
     return local;
   };
 
+  const [busy, setBusy] = useState<null | "pdf" | "docx" | "print">(null);
+
   const captureCanvas = async () => {
     const { default: html2canvas } = await import("html2canvas");
-    const node = certRef.current;
-    if (!node) throw new Error("Certificate not rendered");
-    return html2canvas(node, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false });
+    const node = document.getElementById("certificate-canvas") as HTMLElement | null;
+    if (!node) throw new Error("Certificate preview not found in DOM");
+    if ((document as any).fonts?.ready) {
+      try { await (document as any).fonts.ready; } catch { /* ignore */ }
+    }
+    // The visible preview is CSS-scaled (transform: scale). Reset it during capture
+    // so html2canvas renders the certificate at its native 1123×794 resolution.
+    const prevTransform = node.style.transform;
+    const prevOrigin = node.style.transformOrigin;
+    node.style.transform = "none";
+    node.style.transformOrigin = "top left";
+    try {
+      return await html2canvas(node, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        width: 1123,
+        height: 794,
+        windowWidth: 1123,
+        windowHeight: 794,
+      });
+    } finally {
+      node.style.transform = prevTransform;
+      node.style.transformOrigin = prevOrigin;
+    }
   };
 
+
   const handlePdf = async () => {
-    if (!guard()) return;
+    if (!guard() || busy) return;
+    setBusy("pdf");
     try {
       const canvas = await captureCanvas();
       const { jsPDF } = await import("jspdf");
@@ -147,13 +175,17 @@ function CertificatesAdmin() {
       pdf.save(`${fileBase(studentName, certificateNumber)}.pdf`);
       await persist();
       toast.success("PDF downloaded");
-    } catch (e) {
-      console.error(e); toast.error("Could not export PDF");
+    } catch (e: any) {
+      console.error("[Certificate PDF] failed:", e);
+      toast.error(`Could not export PDF: ${e?.message ?? "unknown error"}`);
+    } finally {
+      setBusy(null);
     }
   };
 
   const handleDocx = async () => {
-    if (!guard()) return;
+    if (!guard() || busy) return;
+    setBusy("docx");
     try {
       const {
         Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
@@ -239,22 +271,29 @@ function CertificatesAdmin() {
       saveAs(blob, `${fileBase(studentName, certificateNumber)}.docx`);
       await persist();
       toast.success("DOCX downloaded");
-    } catch (e) {
-      console.error(e); toast.error("Could not export DOCX");
+    } catch (e: any) {
+      console.error("[Certificate DOCX] failed:", e);
+      toast.error(`Could not export DOCX: ${e?.message ?? "unknown error"}`);
+    } finally {
+      setBusy(null);
     }
   };
 
   const handlePrint = async () => {
-    if (!guard()) return;
+    if (!guard() || busy) return;
+    setBusy("print");
     try {
       document.body.classList.add("printing-certificate");
       await new Promise((r) => setTimeout(r, 50));
       window.print();
       setTimeout(() => document.body.classList.remove("printing-certificate"), 500);
       await persist();
-    } catch (e) {
-      console.error(e); toast.error("Could not print");
+    } catch (e: any) {
+      console.error("[Certificate Print] failed:", e);
+      toast.error(`Could not print: ${e?.message ?? "unknown error"}`);
       document.body.classList.remove("printing-certificate");
+    } finally {
+      setBusy(null);
     }
   };
 
@@ -324,11 +363,21 @@ function CertificatesAdmin() {
           </div>
 
           <div className="grid grid-cols-1 gap-2 pt-2">
-            <Button onClick={handlePdf}><Download className="mr-2 h-4 w-4" /> Download as PDF</Button>
-            <Button variant="secondary" onClick={handleDocx}><FileText className="mr-2 h-4 w-4" /> Download as DOCX</Button>
-            <Button variant="outline" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+            <Button onClick={handlePdf} disabled={!!busy}>
+              {busy === "pdf" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {busy === "pdf" ? "Generating PDF…" : "Download as PDF"}
+            </Button>
+            <Button variant="secondary" onClick={handleDocx} disabled={!!busy}>
+              {busy === "docx" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+              {busy === "docx" ? "Generating DOCX…" : "Download as DOCX"}
+            </Button>
+            <Button variant="outline" onClick={handlePrint} disabled={!!busy}>
+              {busy === "print" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
+              Print
+            </Button>
           </div>
         </Card>
+
 
         <Card className="overflow-hidden bg-muted/40 p-4">
           <div className="mb-3 flex items-center justify-between no-print">
@@ -390,11 +439,16 @@ function CertificatesAdmin() {
 }
 
 function ResponsiveCertificate({ data, innerRef }: { data: CertificateData; innerRef: React.Ref<HTMLDivElement> }) {
-  return (
-    <div className="w-full">
-      <div className="hidden xl:block"><Certificate ref={innerRef} data={data} scale={0.75} /></div>
-      <div className="hidden md:block xl:hidden"><Certificate ref={innerRef} data={data} scale={0.6} /></div>
-      <div className="md:hidden"><Certificate ref={innerRef} data={data} scale={0.4} /></div>
-    </div>
-  );
+  const [scale, setScale] = useState(0.6);
+  useEffect(() => {
+    const compute = () => {
+      const w = window.innerWidth;
+      setScale(w >= 1280 ? 0.75 : w >= 768 ? 0.6 : Math.max(0.28, Math.min(0.55, (w - 80) / 1123)));
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
+  return <Certificate ref={innerRef} data={data} scale={scale} />;
 }
+
