@@ -19,6 +19,7 @@ export const Route = createFileRoute("/admin/courses")({
 const empty: Omit<Course, "id"> = {
   title: "",
   category: "IELTS/TOEFL",
+  code: "IELTS",
   description: "",
   level: "",
   price: "",
