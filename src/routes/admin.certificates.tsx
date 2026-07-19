@@ -352,11 +352,21 @@ function CertificatesAdmin() {
           </div>
 
           <div className="grid grid-cols-1 gap-2 pt-2">
-            <Button onClick={handlePdf}><Download className="mr-2 h-4 w-4" /> Download as PDF</Button>
-            <Button variant="secondary" onClick={handleDocx}><FileText className="mr-2 h-4 w-4" /> Download as DOCX</Button>
-            <Button variant="outline" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+            <Button onClick={handlePdf} disabled={!!busy}>
+              {busy === "pdf" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {busy === "pdf" ? "Generating PDF…" : "Download as PDF"}
+            </Button>
+            <Button variant="secondary" onClick={handleDocx} disabled={!!busy}>
+              {busy === "docx" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+              {busy === "docx" ? "Generating DOCX…" : "Download as DOCX"}
+            </Button>
+            <Button variant="outline" onClick={handlePrint} disabled={!!busy}>
+              {busy === "print" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
+              Print
+            </Button>
           </div>
         </Card>
+
 
         <Card className="overflow-hidden bg-muted/40 p-4">
           <div className="mb-3 flex items-center justify-between no-print">
