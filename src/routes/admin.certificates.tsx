@@ -175,7 +175,7 @@ function CertificatesAdmin() {
   const handleDocx = async () => {
     if (!guard() || busy) return;
     setBusy("docx");
-      const {
+    try {
         Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
         PageOrientation, BorderStyle,
       } = await import("docx");
