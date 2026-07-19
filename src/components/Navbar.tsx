@@ -34,9 +34,12 @@ export function Navbar() {
             </Link>
           ))}
         </nav>
-        <div className="hidden lg:block">
+        <div className="hidden items-center gap-2 lg:flex">
+          <Button asChild variant="ghost">
+            <Link to="/login">Login</Link>
+          </Button>
           <Button asChild className="bg-primary hover:bg-primary/90">
-            <Link to="/courses">Explore Courses</Link>
+            <Link to="/signup">Sign Up</Link>
           </Button>
         </div>
         <button
@@ -60,8 +63,11 @@ export function Navbar() {
                 {l.label}
               </Link>
             ))}
-            <Button asChild className="mt-2 bg-primary hover:bg-primary/90">
-              <Link to="/courses" onClick={() => setOpen(false)}>Explore Courses</Link>
+            <Button asChild variant="outline" className="mt-2">
+              <Link to="/login" onClick={() => setOpen(false)}>Login</Link>
+            </Button>
+            <Button asChild className="bg-primary hover:bg-primary/90">
+              <Link to="/signup" onClick={() => setOpen(false)}>Sign Up</Link>
             </Button>
           </nav>
         </div>
