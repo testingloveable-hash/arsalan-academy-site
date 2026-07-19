@@ -428,11 +428,16 @@ function CertificatesAdmin() {
 }
 
 function ResponsiveCertificate({ data, innerRef }: { data: CertificateData; innerRef: React.Ref<HTMLDivElement> }) {
-  return (
-    <div className="w-full">
-      <div className="hidden xl:block"><Certificate ref={innerRef} data={data} scale={0.75} /></div>
-      <div className="hidden md:block xl:hidden"><Certificate ref={innerRef} data={data} scale={0.6} /></div>
-      <div className="md:hidden"><Certificate ref={innerRef} data={data} scale={0.4} /></div>
-    </div>
-  );
+  const [scale, setScale] = useState(0.6);
+  useEffect(() => {
+    const compute = () => {
+      const w = window.innerWidth;
+      setScale(w >= 1280 ? 0.75 : w >= 768 ? 0.6 : Math.max(0.28, Math.min(0.55, (w - 80) / 1123)));
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
+  return <Certificate ref={innerRef} data={data} scale={scale} />;
 }
+
