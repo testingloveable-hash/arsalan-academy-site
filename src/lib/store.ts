@@ -26,6 +26,7 @@ export interface Course {
   id: string;
   title: string;
   category: Category;
+  code: string;
   description: string;
   level: string;
   price: string;
@@ -35,6 +36,16 @@ export interface Course {
   startDate: string;
   dailyTimeLimit: number; // minutes
   featured: boolean;
+}
+
+export interface Certificate {
+  id: string;
+  number: string;
+  studentName: string;
+  courseId: string;
+  courseTitle: string;
+  completionDate: string;
+  issuedAt: string;
 }
 
 export interface Testimonial {
