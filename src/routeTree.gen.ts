@@ -9,6 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -29,6 +32,21 @@ import { Route as PublicAboutRouteImport } from './routes/_public.about'
 import { Route as PublicPracticeLessonIdRouteImport } from './routes/_public.practice.$lessonId'
 import { Route as PublicCoursesCourseIdRouteImport } from './routes/_public.courses.$courseId'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -127,6 +145,9 @@ const PublicCoursesCourseIdRoute = PublicCoursesCourseIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/about': typeof PublicAboutRoute
   '/blog': typeof PublicBlogRoute
   '/contact': typeof PublicContactRoute
@@ -145,6 +166,9 @@ export interface FileRoutesByFullPath {
   '/practice/$lessonId': typeof PublicPracticeLessonIdRoute
 }
 export interface FileRoutesByTo {
+  '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/about': typeof PublicAboutRoute
   '/blog': typeof PublicBlogRoute
   '/contact': typeof PublicContactRoute
@@ -167,6 +191,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_public': typeof PublicRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/_public/about': typeof PublicAboutRoute
   '/_public/blog': typeof PublicBlogRoute
   '/_public/contact': typeof PublicContactRoute
@@ -190,6 +217,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/dashboard'
+    | '/login'
+    | '/signup'
     | '/about'
     | '/blog'
     | '/contact'
@@ -208,6 +238,9 @@ export interface FileRouteTypes {
     | '/practice/$lessonId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/dashboard'
+    | '/login'
+    | '/signup'
     | '/about'
     | '/blog'
     | '/contact'
@@ -229,6 +262,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_public'
     | '/admin'
+    | '/dashboard'
+    | '/login'
+    | '/signup'
     | '/_public/about'
     | '/_public/blog'
     | '/_public/contact'
@@ -251,10 +287,34 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  DashboardRoute: typeof DashboardRoute
+  LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -455,6 +515,9 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   PublicRoute: PublicRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  DashboardRoute: DashboardRoute,
+  LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
