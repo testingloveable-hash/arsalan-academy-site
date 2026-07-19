@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { LayoutDashboard, BookOpen, ListVideo, Timer, Users, MessageSquareQuote, Settings, ExternalLink } from "lucide-react";
+import { LayoutDashboard, BookOpen, ListVideo, Timer, Users, MessageSquareQuote, Settings, ExternalLink, Award } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/admin")({
@@ -13,6 +13,7 @@ const items = [
   { to: "/admin/lessons", label: "Lessons", icon: ListVideo, exact: false },
   { to: "/admin/limits", label: "Practice Limits", icon: Timer, exact: false },
   { to: "/admin/students", label: "Students", icon: Users, exact: false },
+  { to: "/admin/certificates", label: "Certificates", icon: Award, exact: false },
   { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote, exact: false },
   { to: "/admin/settings", label: "Site Settings", icon: Settings, exact: false },
 ] as const;

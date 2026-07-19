@@ -26,6 +26,7 @@ export interface Course {
   id: string;
   title: string;
   category: Category;
+  code: string;
   description: string;
   level: string;
   price: string;
@@ -35,6 +36,16 @@ export interface Course {
   startDate: string;
   dailyTimeLimit: number; // minutes
   featured: boolean;
+}
+
+export interface Certificate {
+  id: string;
+  number: string;
+  studentName: string;
+  courseId: string;
+  courseTitle: string;
+  completionDate: string;
+  issuedAt: string;
 }
 
 export interface Testimonial {
@@ -62,6 +73,7 @@ interface State {
   lessons: Lesson[];
   testimonials: Testimonial[];
   settings: SiteSettings;
+  certificates: Certificate[];
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -71,6 +83,7 @@ const defaultCourses: Course[] = [
     id: "c1",
     title: "IELTS Academic — Band 7+ Intensive",
     category: "IELTS/TOEFL",
+    code: "IELTS",
     description: "Master all four IELTS modules with daily practice, targeted feedback, and mock tests.",
     level: "Intermediate → Advanced",
     price: "PKR 18,000",
@@ -85,6 +98,7 @@ const defaultCourses: Course[] = [
     id: "c2",
     title: "TOEFL iBT Complete Prep",
     category: "IELTS/TOEFL",
+    code: "TOEFL",
     description: "Structured 8-week TOEFL program covering Reading, Listening, Speaking, and Writing.",
     level: "Intermediate",
     price: "PKR 20,000",
@@ -99,6 +113,7 @@ const defaultCourses: Course[] = [
     id: "c3",
     title: "Functional English — Speak With Confidence",
     category: "Functional English",
+    code: "FENG",
     description: "Everyday spoken English for work, travel, and social settings. Build fluency fast.",
     level: "Beginner → Intermediate",
     price: "PKR 12,000",
@@ -113,6 +128,7 @@ const defaultCourses: Course[] = [
     id: "c4",
     title: "O Level English (IX–X)",
     category: "O Level",
+    code: "OLV",
     description: "Cambridge O Level English Language coaching with past-paper drills and writing feedback.",
     level: "Grade IX–X",
     price: "PKR 15,000",
@@ -127,6 +143,7 @@ const defaultCourses: Course[] = [
     id: "c5",
     title: "A Level English (XI–XII)",
     category: "A Level",
+    code: "ALV",
     description: "AS/A Level English Language & Literature with essay technique and analytical writing.",
     level: "Grade XI–XII",
     price: "PKR 18,000",
@@ -141,6 +158,7 @@ const defaultCourses: Course[] = [
     id: "c6",
     title: "Teachers' Training — CELTA-Style Methods",
     category: "Teachers' Training",
+    code: "TCHR",
     description: "Modern communicative teaching methods, lesson planning, and classroom management.",
     level: "For educators",
     price: "PKR 25,000",
@@ -242,18 +260,21 @@ const defaultSettings: SiteSettings = {
 
 const STORAGE_KEY = "arsalan-academy-v1";
 
+const defaults: State = { courses: defaultCourses, lessons: defaultLessons, testimonials: defaultTestimonials, settings: defaultSettings, certificates: [] };
+
 function load(): State {
-  if (typeof window === "undefined") {
-    return { courses: defaultCourses, lessons: defaultLessons, testimonials: defaultTestimonials, settings: defaultSettings };
-  }
+  if (typeof window === "undefined") return defaults;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as State;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<State>;
+      return { ...defaults, ...parsed, certificates: parsed.certificates ?? [] };
+    }
   } catch {}
-  return { courses: defaultCourses, lessons: defaultLessons, testimonials: defaultTestimonials, settings: defaultSettings };
+  return defaults;
 }
 
-let state: State = { courses: defaultCourses, lessons: defaultLessons, testimonials: defaultTestimonials, settings: defaultSettings };
+let state: State = defaults;
 let hydrated = false;
 const listeners = new Set<() => void>();
 
@@ -293,12 +314,17 @@ export function useStore<T>(selector: (s: State) => T): T {
   return useSyncExternalStore(
     store.subscribe,
     () => selector(store.get()),
-    () => selector({ courses: defaultCourses, lessons: defaultLessons, testimonials: defaultTestimonials, settings: defaultSettings }),
+    () => selector(defaults),
   );
 }
 
-// Mutations
 export const actions = {
+  addCertificate: (c: Omit<Certificate, "id">) => {
+    const cert = { ...c, id: uid() };
+    store.set((s) => ({ ...s, certificates: [cert, ...s.certificates] }));
+    return cert;
+  },
+  deleteCertificate: (id: string) => store.set((s) => ({ ...s, certificates: s.certificates.filter((c) => c.id !== id) })),
   addCourse: (c: Omit<Course, "id">) => store.set((s) => ({ ...s, courses: [...s.courses, { ...c, id: uid() }] })),
   updateCourse: (id: string, patch: Partial<Course>) => store.set((s) => ({ ...s, courses: s.courses.map((c) => (c.id === id ? { ...c, ...patch } : c)) })),
   deleteCourse: (id: string) => store.set((s) => ({ ...s, courses: s.courses.filter((c) => c.id !== id), lessons: s.lessons.filter((l) => l.courseId !== id) })),

@@ -19,6 +19,7 @@ export const Route = createFileRoute("/admin/courses")({
 const empty: Omit<Course, "id"> = {
   title: "",
   category: "IELTS/TOEFL",
+  code: "IELTS",
   description: "",
   level: "",
   price: "",
@@ -67,6 +68,7 @@ function CoursesAdmin() {
                 </Select>
               </div>
               <div><Label>Level</Label><Input value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} /></div>
+              <div><Label>Certificate code</Label><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })} placeholder="IELTS" /></div>
               <div className="md:col-span-2"><Label>Short description</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
               <div><Label>Price</Label><Input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
               <div><Label>Thumbnail URL</Label><Input value={form.thumbnail} onChange={(e) => setForm({ ...form, thumbnail: e.target.value })} /></div>
