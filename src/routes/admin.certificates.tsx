@@ -168,11 +168,38 @@ function CertificatesAdmin() {
     if (!guard() || busy) return;
     setBusy("pdf");
     try {
-      const canvas = await captureCanvas();
+      const { default: html2canvas } = await import("html2canvas");
       const { jsPDF } = await import("jspdf");
-      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1123, 794], compress: true });
-      pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, 1123, 794);
-      pdf.save(`${fileBase(studentName, certificateNumber)}.pdf`);
+      const element = document.getElementById("certificate-preview");
+      if (!element) throw new Error("Certificate preview not found");
+      if ((document as any).fonts?.ready) {
+        try { await (document as any).fonts.ready; } catch { /* ignore */ }
+      }
+      // Neutralize CSS scale during capture so full 1123x794 is rendered
+      const prevTransform = element.style.transform;
+      const prevOrigin = element.style.transformOrigin;
+      element.style.transform = "none";
+      element.style.transformOrigin = "top left";
+      let canvas;
+      try {
+        canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          width: 1123,
+          height: 794,
+          windowWidth: 1123,
+          windowHeight: 794,
+        });
+      } finally {
+        element.style.transform = prevTransform;
+        element.style.transformOrigin = prevOrigin;
+      }
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      pdf.addImage(imgData, "PNG", 0, 0, 297, 210);
+      pdf.save(`Certificate-${safe(studentName)}-${safe(certificateNumber)}.pdf`);
       await persist();
       toast.success("PDF downloaded");
     } catch (e: any) {
