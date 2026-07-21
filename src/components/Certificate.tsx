@@ -28,7 +28,7 @@ export const Certificate = forwardRef<HTMLDivElement, { data: CertificateData; s
       <div className="mx-auto" style={{ width: 1123 * scale, height: 794 * scale }}>
         <div
           ref={ref}
-          id="certificate-canvas"
+          id="certificate-preview"
           className="relative overflow-hidden bg-white font-serif text-[color:var(--brand-navy)]"
           style={{
             width: 1123,
