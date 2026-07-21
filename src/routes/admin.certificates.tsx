@@ -132,47 +132,44 @@ function CertificatesAdmin() {
 
   const [busy, setBusy] = useState<null | "pdf" | "docx" | "print">(null);
 
-  const captureCanvas = async () => {
-    const { default: html2canvas } = await import("html2canvas");
-    const node = document.getElementById("certificate-canvas") as HTMLElement | null;
-    if (!node) throw new Error("Certificate preview not found in DOM");
-    if ((document as any).fonts?.ready) {
-      try { await (document as any).fonts.ready; } catch { /* ignore */ }
-    }
-    // The visible preview is CSS-scaled (transform: scale). Reset it during capture
-    // so html2canvas renders the certificate at its native 1123×794 resolution.
-    const prevTransform = node.style.transform;
-    const prevOrigin = node.style.transformOrigin;
-    node.style.transform = "none";
-    node.style.transformOrigin = "top left";
-    try {
-      return await html2canvas(node, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        width: 1123,
-        height: 794,
-        windowWidth: 1123,
-        windowHeight: 794,
-      });
-    } finally {
-      node.style.transform = prevTransform;
-      node.style.transformOrigin = prevOrigin;
-    }
-  };
 
 
   const handlePdf = async () => {
     if (!guard() || busy) return;
     setBusy("pdf");
     try {
-      const canvas = await captureCanvas();
+      const { default: html2canvas } = await import("html2canvas");
       const { jsPDF } = await import("jspdf");
-      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1123, 794], compress: true });
-      pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, 1123, 794);
-      pdf.save(`${fileBase(studentName, certificateNumber)}.pdf`);
+      const element = document.getElementById("certificate-preview");
+      if (!element) throw new Error("Certificate preview not found");
+      if ((document as any).fonts?.ready) {
+        try { await (document as any).fonts.ready; } catch { /* ignore */ }
+      }
+      // Neutralize CSS scale during capture so full 1123x794 is rendered
+      const prevTransform = element.style.transform;
+      const prevOrigin = element.style.transformOrigin;
+      element.style.transform = "none";
+      element.style.transformOrigin = "top left";
+      let canvas;
+      try {
+        canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          width: 1123,
+          height: 794,
+          windowWidth: 1123,
+          windowHeight: 794,
+        });
+      } finally {
+        element.style.transform = prevTransform;
+        element.style.transformOrigin = prevOrigin;
+      }
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      pdf.addImage(imgData, "PNG", 0, 0, 297, 210);
+      pdf.save(`Certificate-${safe(studentName)}-${safe(certificateNumber)}.pdf`);
       await persist();
       toast.success("PDF downloaded");
     } catch (e: any) {
