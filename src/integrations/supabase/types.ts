@@ -21,10 +21,14 @@ export type Database = {
           course_title: string
           created_at: string
           created_by: string | null
+          email_sent_at: string | null
+          email_status: string | null
           id: string
           issued_at: string
           number: string
+          student_email: string | null
           student_name: string
+          user_id: string | null
         }
         Insert: {
           completion_date: string
@@ -32,10 +36,14 @@ export type Database = {
           course_title: string
           created_at?: string
           created_by?: string | null
+          email_sent_at?: string | null
+          email_status?: string | null
           id?: string
           issued_at?: string
           number: string
+          student_email?: string | null
           student_name: string
+          user_id?: string | null
         }
         Update: {
           completion_date?: string
@@ -43,10 +51,14 @@ export type Database = {
           course_title?: string
           created_at?: string
           created_by?: string | null
+          email_sent_at?: string | null
+          email_status?: string | null
           id?: string
           issued_at?: string
           number?: string
+          student_email?: string | null
           student_name?: string
+          user_id?: string | null
         }
         Relationships: []
       }
