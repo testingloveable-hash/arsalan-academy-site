@@ -72,13 +72,6 @@ function Dashboard() {
             </Card>
           </section>
 
-          <section className="mt-10">
-            <h2 className="text-xl font-semibold">My Certificates</h2>
-            <Card className="mt-4 border-dashed p-10 text-center">
-              <Award className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">You don't have any certificates yet.</p>
-            </Card>
-          </section>
         </div>
       </main>
       <Footer />
