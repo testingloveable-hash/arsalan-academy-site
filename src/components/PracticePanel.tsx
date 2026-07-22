@@ -10,11 +10,12 @@ interface Props {
   lesson: Lesson;
   timeLimit: number; // minutes
   adminEmail: string;
+  onQuizComplete?: (score: number, total: number) => void;
 }
 
 type Msg = { role: "bot" | "user"; text: string };
 
-export function PracticePanel({ lesson, timeLimit, adminEmail }: Props) {
+export function PracticePanel({ lesson, timeLimit, adminEmail, onQuizComplete }: Props) {
   const modes: ("chatbot" | "quiz")[] = [];
   if (lesson.chatbotEnabled) modes.push("chatbot");
   if (lesson.quizEnabled) modes.push("quiz");
@@ -79,7 +80,7 @@ export function PracticePanel({ lesson, timeLimit, adminEmail }: Props) {
         <Progress value={pct} className="h-1.5" />
       </div>
       <div className="p-4">
-        {mode === "chatbot" ? <ChatMode lesson={lesson} /> : <QuizMode lesson={lesson} />}
+        {mode === "chatbot" ? <ChatMode lesson={lesson} /> : <QuizMode lesson={lesson} onComplete={onQuizComplete} />}
       </div>
     </Card>
   );
@@ -151,21 +152,26 @@ function mockFeedback(text: string): string {
   return "Good — clear structure and correct punctuation!";
 }
 
-function QuizMode({ lesson }: { lesson: Lesson }) {
+function QuizMode({ lesson, onComplete }: { lesson: Lesson; onComplete?: (score: number, total: number) => void }) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
+  const notifiedRef = useRef(false);
 
   const q = lesson.quiz[idx];
   if (!q) return <p className="text-sm text-muted-foreground">No quiz questions yet.</p>;
 
   if (done) {
+    if (!notifiedRef.current) {
+      notifiedRef.current = true;
+      onComplete?.(score, lesson.quiz.length);
+    }
     return (
       <div className="rounded-md bg-muted/40 p-6 text-center">
         <h3 className="text-lg font-semibold">Quiz complete!</h3>
         <p className="mt-1 text-3xl font-bold text-primary">{score} / {lesson.quiz.length}</p>
-        <Button className="mt-4" onClick={() => { setIdx(0); setSelected(null); setScore(0); setDone(false); }}>
+        <Button className="mt-4" onClick={() => { setIdx(0); setSelected(null); setScore(0); setDone(false); notifiedRef.current = false; }}>
           Try again
         </Button>
       </div>
