@@ -10,6 +10,7 @@ interface Props {
   lesson: Lesson;
   timeLimit: number; // minutes
   adminEmail: string;
+  onQuizComplete?: (score: number, total: number) => void;
 }
 
 type Msg = { role: "bot" | "user"; text: string };
