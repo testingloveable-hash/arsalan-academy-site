@@ -39,6 +39,8 @@ function CertificatesAdmin() {
   const localCerts = useStore((s) => s.certificates);
   const [remote, setRemote] = useState<Cert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const resend = useServerFn(resendCertificateEmail);
 
   const [studentName, setStudentName] = useState("");
   const [courseId, setCourseId] = useState<string>(courses[0]?.id ?? "");
