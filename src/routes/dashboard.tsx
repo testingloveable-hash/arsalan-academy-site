@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { BookOpen, Award, LogOut, ArrowRight } from "lucide-react";
+import { BookOpen, LogOut, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
