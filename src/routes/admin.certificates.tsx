@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Award, Download, FileText, Loader2, Printer, Trash2 } from "lucide-react";
+import { Award, Download, FileText, Loader2, Mail, Printer, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { actions, useStore, type Certificate as Cert } from "@/lib/store";
 import { Certificate, type CertificateData } from "@/components/Certificate";
 import { supabase } from "@/integrations/supabase/client";
+import { resendCertificateEmail } from "@/lib/certificates.functions";
 
 export const Route = createFileRoute("/admin/certificates")({
   component: CertificatesAdmin,
