@@ -87,33 +87,15 @@ function CoursesAdmin() {
     setDraftLessons([]);
     setOpen(true);
   };
+
   const save = () => {
     if (editing) {
       actions.updateCourse(editing.id, form);
     } else {
-      const created = actions.addCourse(form) as unknown as Course | undefined;
-      // addCourse doesn't return; find newest by title as fallback
-      const courseId =
-        (created && created.id) ||
-        useStore.prototype /* noop */ ||
-        "";
-      // Robust lookup: read from store
-      // We can't rely on returned value; find by matching form fields
-      const fresh = actions;
-      void fresh;
-      // Re-read store synchronously
-      const allNow = (window as unknown as { __none?: never });
-      void allNow;
-      // Simpler: after addCourse dispatched, the store update is sync.
-      // Retrieve created course id from store snapshot:
-      const s = (require: never) => require;
-      void s;
-    }
-    // Insert draft lessons (only on create)
-    if (!editing) {
-      // Find the newly-added course id by matching title
-      const latestCourse = [...(window as unknown as Window & typeof globalThis) ? [] : []];
-      void latestCourse;
+      const created = actions.addCourse(form);
+      draftLessons
+        .filter((d) => d.title.trim())
+        .forEach((d) => actions.addLesson(draftToLesson(d, created.id)));
     }
     setOpen(false);
   };
@@ -210,52 +192,15 @@ function CoursesAdmin() {
                     </div>
                   ))}
                 </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  You can also add and edit lessons anytime from the <strong>Lessons</strong> tab in the sidebar.
+                </p>
               </div>
             )}
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button
-                onClick={() => {
-                  if (editing) {
-                    actions.updateCourse(editing.id, form);
-                  } else {
-                    // addCourse mutates store; generate a stable id here so we can attach lessons.
-                    const id = Math.random().toString(36).slice(2, 10);
-                    // Push course + queued lessons in one logical step
-                    actions.addCourse(form);
-                    // Find the course we just added (last added with matching title/category)
-                    // Fallback: re-fetch from store
-                    // Use the store directly for lookup:
-                    // Prefer courseId assignment via matching title+category on latest state.
-                    // Simpler: since addCourse uses a random id internally, look up by title now.
-                    // We call setTimeout to run after state emit, but state is synchronous — read from window.
-                    // Easiest: read from useStore snapshot next tick isn't needed; call store.get()
-                    // via imported store — inline require avoided; use window trick? Just read from courses prop.
-                    // We already have `courses` from useStore; but it's stale in this closure. Use a different approach:
-                    // add the lessons in a microtask.
-                    Promise.resolve().then(() => {
-                      // eslint-disable-next-line @typescript-eslint/no-var-requires
-                      const mod = { store: null as unknown as { get: () => { courses: Course[] } } };
-                      void mod;
-                    });
-                    void id;
-                    // Direct approach: import store lazily to avoid circular
-                    import("@/lib/store").then(({ store }) => {
-                      const latest = store.get().courses;
-                      const created = latest[latest.length - 1];
-                      if (created && draftLessons.length > 0) {
-                        draftLessons
-                          .filter((d) => d.title.trim())
-                          .forEach((d) => actions.addLesson(draftToLesson(d, created.id)));
-                      }
-                    });
-                  }
-                  setOpen(false);
-                }}
-              >
-                {editing ? "Save changes" : "Create course"}
-              </Button>
+              <Button onClick={save}>{editing ? "Save changes" : "Create course"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -293,6 +238,3 @@ function CoursesAdmin() {
     </div>
   );
 }
-
-// unused helper (kept for future) — silence linter
-void save;
