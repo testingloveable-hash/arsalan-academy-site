@@ -128,8 +128,8 @@ function PracticeDemo() {
     }
     setMarking(true);
     try {
-      await markCompleteFn({ data: { courseId: course.id, lessonId: lesson.id } });
-      await qc.invalidateQueries({ queryKey: ["my-progress", course.id] });
+      await markCompleteFn({ data: { courseId: course!.id, lessonId: lesson!.id } });
+      await qc.invalidateQueries({ queryKey: ["my-progress", course!.id] });
       toast.success("Lesson marked complete!");
       const next = courseLessons[lessonIndex + 1];
       if (next) nav({ to: "/practice/$lessonId", params: { lessonId: next.id } });
