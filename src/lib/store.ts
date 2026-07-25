@@ -325,7 +325,11 @@ export const actions = {
     return cert;
   },
   deleteCertificate: (id: string) => store.set((s) => ({ ...s, certificates: s.certificates.filter((c) => c.id !== id) })),
-  addCourse: (c: Omit<Course, "id">) => store.set((s) => ({ ...s, courses: [...s.courses, { ...c, id: uid() }] })),
+  addCourse: (c: Omit<Course, "id">) => {
+    const course = { ...c, id: uid() };
+    store.set((s) => ({ ...s, courses: [...s.courses, course] }));
+    return course;
+  },
   updateCourse: (id: string, patch: Partial<Course>) => store.set((s) => ({ ...s, courses: s.courses.map((c) => (c.id === id ? { ...c, ...patch } : c)) })),
   deleteCourse: (id: string) => store.set((s) => ({ ...s, courses: s.courses.filter((c) => c.id !== id), lessons: s.lessons.filter((l) => l.courseId !== id) })),
   addLesson: (l: Omit<Lesson, "id">) => store.set((s) => ({ ...s, lessons: [...s.lessons, { ...l, id: uid() }] })),
