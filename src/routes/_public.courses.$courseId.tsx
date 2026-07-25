@@ -1,10 +1,15 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Lock, Unlock, Bot, ClipboardList, PlayCircle, Calendar, Clock, User } from "lucide-react";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Lock, Unlock, Bot, ClipboardList, PlayCircle, Calendar, Clock, User, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/hooks/use-auth";
+import { enrollInCourse, listMyEnrollments, listMyProgress } from "@/lib/enrollments.functions";
 
 export const Route = createFileRoute("/_public/courses/$courseId")({
   component: CourseDetail,
@@ -12,11 +17,62 @@ export const Route = createFileRoute("/_public/courses/$courseId")({
 
 function CourseDetail() {
   const { courseId } = Route.useParams();
+  const nav = useNavigate();
+  const qc = useQueryClient();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
-  const lessons = useStore((s) => s.lessons.filter((l) => l.courseId === courseId).sort((a, b) => a.day - b.day));
+  const lessons = useStore((s) =>
+    s.lessons.filter((l) => l.courseId === courseId).sort((a, b) => a.day - b.day),
+  );
   const email = useStore((s) => s.settings.email);
+  const { session, role } = useAuth();
+  const isStudent = !!session && role !== "admin";
+
+  const enrollFn = useServerFn(enrollInCourse);
+  const listEnrollmentsFn = useServerFn(listMyEnrollments);
+  const listProgressFn = useServerFn(listMyProgress);
+
+  const enrollmentsQ = useQuery({
+    queryKey: ["my-enrollments"],
+    queryFn: () => listEnrollmentsFn({}),
+    enabled: isStudent,
+  });
+  const progressQ = useQuery({
+    queryKey: ["my-progress", courseId],
+    queryFn: () => listProgressFn({ data: { courseId } }),
+    enabled: isStudent,
+  });
 
   if (!course) throw notFound();
+
+  const enrolled = !!enrollmentsQ.data?.some((e) => e.course_id === courseId);
+  const completedIds = new Set((progressQ.data ?? []).map((p) => p.lesson_id));
+  const nextLesson = lessons.find((l) => !completedIds.has(l.id)) ?? lessons[0];
+
+  async function handleEnroll() {
+    if (!session) {
+      nav({ to: "/login" });
+      return;
+    }
+    if (role === "admin") {
+      toast.info("Admins don't need to enroll.");
+      return;
+    }
+    try {
+      await enrollFn({ data: { courseId } });
+      await qc.invalidateQueries({ queryKey: ["my-enrollments"] });
+      toast.success("Enrolled! You can now start the course.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Enrollment failed");
+    }
+  }
+
+  const isLessonUnlocked = (index: number) => {
+    if (!isStudent) return index === 0; // preview first for guests/admins
+    if (!enrolled) return index === 0;
+    // Sequential unlock: unlocked if previous completed, or it's the first
+    if (index === 0) return true;
+    return completedIds.has(lessons[index - 1].id);
+  };
 
   return (
     <div>
@@ -44,21 +100,35 @@ function CourseDetail() {
           </ul>
 
           <h2 className="mt-12 text-2xl font-bold text-[color:var(--brand-navy)]">Curriculum</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Lessons unlock day-by-day. Practice follows each video.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {enrolled
+              ? "Complete each lesson to unlock the next one."
+              : "Preview the first lesson free. Enroll to unlock the full curriculum."}
+          </p>
           <div className="mt-4">
             {lessons.length === 0 ? (
               <Card className="p-6 text-sm text-muted-foreground">Lessons will appear here soon.</Card>
             ) : (
               <Accordion type="single" collapsible className="w-full">
                 {lessons.map((l, i) => {
-                  const locked = i > 0;
+                  const unlocked = isLessonUnlocked(i);
+                  const completed = completedIds.has(l.id);
                   return (
                     <AccordionItem key={l.id} value={l.id}>
                       <AccordionTrigger className="hover:no-underline">
                         <div className="flex flex-1 items-center gap-3 text-left">
-                          {locked ? <Lock className="h-4 w-4 text-muted-foreground" /> : <Unlock className="h-4 w-4 text-[color:var(--brand-blue)]" />}
+                          {completed ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          ) : unlocked ? (
+                            <Unlock className="h-4 w-4 text-[color:var(--brand-blue)]" />
+                          ) : (
+                            <Lock className="h-4 w-4 text-muted-foreground" />
+                          )}
                           <span className="text-xs font-mono text-muted-foreground">Day {l.day}</span>
                           <span className="font-medium">{l.title}</span>
+                          {i === 0 && !enrolled && (
+                            <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">Free preview</Badge>
+                          )}
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
@@ -66,10 +136,14 @@ function CourseDetail() {
                           <span className="flex items-center gap-1"><PlayCircle className="h-3.5 w-3.5" /> Video lesson</span>
                           {l.chatbotEnabled && <span className="flex items-center gap-1"><Bot className="h-3.5 w-3.5 text-[color:var(--brand-blue)]" /> AI chat practice</span>}
                           {l.quizEnabled && <span className="flex items-center gap-1"><ClipboardList className="h-3.5 w-3.5 text-[color:var(--brand-blue)]" /> Quiz</span>}
-                          {!locked && (
+                          {unlocked ? (
                             <Button asChild size="sm" className="ml-auto bg-[color:var(--brand-blue)] hover:bg-[color:var(--brand-blue)]/90">
-                              <Link to="/practice/$lessonId" params={{ lessonId: l.id }}>Try lesson demo →</Link>
+                              <Link to="/practice/$lessonId" params={{ lessonId: l.id }}>
+                                {completed ? "Review lesson" : "Open lesson →"}
+                              </Link>
                             </Button>
+                          ) : (
+                            <span className="ml-auto italic">Complete previous lesson to unlock</span>
                           )}
                         </div>
                       </AccordionContent>
@@ -86,14 +160,36 @@ function CourseDetail() {
             <img src={course.thumbnail} alt={course.title} className="aspect-video w-full object-cover" />
             <div className="space-y-3 p-5">
               <p className="text-3xl font-bold text-[color:var(--brand-navy)]">{course.price}</p>
-              <Button asChild className="w-full bg-[color:var(--brand-blue)] hover:bg-[color:var(--brand-blue)]/90">
-                <a href={`mailto:${email}?subject=Enrollment: ${encodeURIComponent(course.title)}`}>Enroll now</a>
-              </Button>
-              {lessons[0] && (
-                <Button asChild variant="outline" className="w-full">
-                  <Link to="/practice/$lessonId" params={{ lessonId: lessons[0].id }}>Try free demo lesson</Link>
-                </Button>
+
+              {isStudent && enrolled ? (
+                <>
+                  <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Enrolled</Badge>
+                  {nextLesson && (
+                    <Button asChild className="w-full bg-[color:var(--brand-blue)] hover:bg-[color:var(--brand-blue)]/90">
+                      <Link to="/practice/$lessonId" params={{ lessonId: nextLesson.id }}>Continue Learning →</Link>
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleEnroll}
+                    disabled={enrollmentsQ.isLoading}
+                    className="w-full bg-[color:var(--brand-blue)] hover:bg-[color:var(--brand-blue)]/90"
+                  >
+                    {session ? "Enroll Now" : "Sign in to Enroll"}
+                  </Button>
+                  {lessons[0] && (
+                    <Button asChild variant="outline" className="w-full">
+                      <Link to="/practice/$lessonId" params={{ lessonId: lessons[0].id }}>Preview first lesson</Link>
+                    </Button>
+                  )}
+                  <a href={`mailto:${email}?subject=Enrollment: ${encodeURIComponent(course.title)}`} className="block text-center text-xs text-muted-foreground hover:text-primary">
+                    Or contact us to enroll manually
+                  </a>
+                </>
               )}
+
               <div className="border-t pt-3 text-xs text-muted-foreground">
                 <div className="flex justify-between py-1"><span>Level</span><span className="font-medium text-foreground">{course.level}</span></div>
                 <div className="flex justify-between py-1"><span>Schedule</span><span className="font-medium text-foreground">{course.daysLabel}</span></div>
