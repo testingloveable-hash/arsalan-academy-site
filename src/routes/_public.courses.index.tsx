@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, useStore, type Category } from "@/lib/store";
 
-export const Route = createFileRoute("/_public/courses")({
+export const Route = createFileRoute("/_public/courses/")({
   component: CoursesPage,
   head: () => ({ meta: [{ title: "Courses — Arsalan Academy" }, { name: "description", content: "Browse IELTS, TOEFL, O & A Level English, Functional English, and Teachers' Training courses." }] }),
 });
