@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useMemo } from "react";
 import { Lock, Unlock, Bot, ClipboardList, PlayCircle, Calendar, Clock, User, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -13,6 +14,16 @@ import { enrollInCourse, listMyEnrollments, listMyProgress } from "@/lib/enrollm
 
 export const Route = createFileRoute("/_public/courses/$courseId")({
   component: CourseDetail,
+  head: () => ({
+    meta: [
+      { title: "Course Details — Arsalan Academy" },
+      { name: "description", content: "View Arsalan Academy course details, schedule, curriculum, enrollment status, and lesson access." },
+      { property: "og:title", content: "Course Details — Arsalan Academy" },
+      { property: "og:description", content: "View course details, schedule, curriculum, enrollment status, and lesson access at Arsalan Academy." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 function CourseDetail() {
@@ -20,8 +31,10 @@ function CourseDetail() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const course = useStore((s) => s.courses.find((c) => c.id === courseId));
-  const lessons = useStore((s) =>
-    s.lessons.filter((l) => l.courseId === courseId).sort((a, b) => a.day - b.day),
+  const allLessons = useStore((s) => s.lessons);
+  const lessons = useMemo(
+    () => allLessons.filter((l) => l.courseId === courseId).sort((a, b) => a.day - b.day),
+    [allLessons, courseId],
   );
   const email = useStore((s) => s.settings.email);
   const { session, role } = useAuth();
