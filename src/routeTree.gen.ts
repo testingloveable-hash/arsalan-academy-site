@@ -25,10 +25,10 @@ import { Route as AdminCoursesRouteImport } from './routes/admin.courses'
 import { Route as AdminCertificatesRouteImport } from './routes/admin.certificates'
 import { Route as PublicTestimonialsRouteImport } from './routes/_public.testimonials'
 import { Route as PublicFaqRouteImport } from './routes/_public.faq'
-import { Route as PublicCoursesRouteImport } from './routes/_public.courses'
 import { Route as PublicContactRouteImport } from './routes/_public.contact'
 import { Route as PublicBlogRouteImport } from './routes/_public.blog'
 import { Route as PublicAboutRouteImport } from './routes/_public.about'
+import { Route as PublicCoursesIndexRouteImport } from './routes/_public.courses.index'
 import { Route as PublicPracticeLessonIdRouteImport } from './routes/_public.practice.$lessonId'
 import { Route as PublicCoursesCourseIdRouteImport } from './routes/_public.courses.$courseId'
 
@@ -111,11 +111,6 @@ const PublicFaqRoute = PublicFaqRouteImport.update({
   path: '/faq',
   getParentRoute: () => PublicRoute,
 } as any)
-const PublicCoursesRoute = PublicCoursesRouteImport.update({
-  id: '/courses',
-  path: '/courses',
-  getParentRoute: () => PublicRoute,
-} as any)
 const PublicContactRoute = PublicContactRouteImport.update({
   id: '/contact',
   path: '/contact',
@@ -131,15 +126,20 @@ const PublicAboutRoute = PublicAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicCoursesIndexRoute = PublicCoursesIndexRouteImport.update({
+  id: '/courses/',
+  path: '/courses/',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicPracticeLessonIdRoute = PublicPracticeLessonIdRouteImport.update({
   id: '/practice/$lessonId',
   path: '/practice/$lessonId',
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicCoursesCourseIdRoute = PublicCoursesCourseIdRouteImport.update({
-  id: '/$courseId',
-  path: '/$courseId',
-  getParentRoute: () => PublicCoursesRoute,
+  id: '/courses/$courseId',
+  path: '/courses/$courseId',
+  getParentRoute: () => PublicRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -151,7 +151,6 @@ export interface FileRoutesByFullPath {
   '/about': typeof PublicAboutRoute
   '/blog': typeof PublicBlogRoute
   '/contact': typeof PublicContactRoute
-  '/courses': typeof PublicCoursesRouteWithChildren
   '/faq': typeof PublicFaqRoute
   '/testimonials': typeof PublicTestimonialsRoute
   '/admin/certificates': typeof AdminCertificatesRoute
@@ -164,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/courses/$courseId': typeof PublicCoursesCourseIdRoute
   '/practice/$lessonId': typeof PublicPracticeLessonIdRoute
+  '/courses/': typeof PublicCoursesIndexRoute
 }
 export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
@@ -172,7 +172,6 @@ export interface FileRoutesByTo {
   '/about': typeof PublicAboutRoute
   '/blog': typeof PublicBlogRoute
   '/contact': typeof PublicContactRoute
-  '/courses': typeof PublicCoursesRouteWithChildren
   '/faq': typeof PublicFaqRoute
   '/testimonials': typeof PublicTestimonialsRoute
   '/admin/certificates': typeof AdminCertificatesRoute
@@ -186,6 +185,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/courses/$courseId': typeof PublicCoursesCourseIdRoute
   '/practice/$lessonId': typeof PublicPracticeLessonIdRoute
+  '/courses': typeof PublicCoursesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -197,7 +197,6 @@ export interface FileRoutesById {
   '/_public/about': typeof PublicAboutRoute
   '/_public/blog': typeof PublicBlogRoute
   '/_public/contact': typeof PublicContactRoute
-  '/_public/courses': typeof PublicCoursesRouteWithChildren
   '/_public/faq': typeof PublicFaqRoute
   '/_public/testimonials': typeof PublicTestimonialsRoute
   '/admin/certificates': typeof AdminCertificatesRoute
@@ -211,6 +210,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/_public/courses/$courseId': typeof PublicCoursesCourseIdRoute
   '/_public/practice/$lessonId': typeof PublicPracticeLessonIdRoute
+  '/_public/courses/': typeof PublicCoursesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -223,7 +223,6 @@ export interface FileRouteTypes {
     | '/about'
     | '/blog'
     | '/contact'
-    | '/courses'
     | '/faq'
     | '/testimonials'
     | '/admin/certificates'
@@ -236,6 +235,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/courses/$courseId'
     | '/practice/$lessonId'
+    | '/courses/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dashboard'
@@ -244,7 +244,6 @@ export interface FileRouteTypes {
     | '/about'
     | '/blog'
     | '/contact'
-    | '/courses'
     | '/faq'
     | '/testimonials'
     | '/admin/certificates'
@@ -258,6 +257,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/courses/$courseId'
     | '/practice/$lessonId'
+    | '/courses'
   id:
     | '__root__'
     | '/_public'
@@ -268,7 +268,6 @@ export interface FileRouteTypes {
     | '/_public/about'
     | '/_public/blog'
     | '/_public/contact'
-    | '/_public/courses'
     | '/_public/faq'
     | '/_public/testimonials'
     | '/admin/certificates'
@@ -282,6 +281,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/_public/courses/$courseId'
     | '/_public/practice/$lessonId'
+    | '/_public/courses/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -406,13 +406,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicFaqRouteImport
       parentRoute: typeof PublicRoute
     }
-    '/_public/courses': {
-      id: '/_public/courses'
-      path: '/courses'
-      fullPath: '/courses'
-      preLoaderRoute: typeof PublicCoursesRouteImport
-      parentRoute: typeof PublicRoute
-    }
     '/_public/contact': {
       id: '/_public/contact'
       path: '/contact'
@@ -434,6 +427,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicAboutRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/courses/': {
+      id: '/_public/courses/'
+      path: '/courses'
+      fullPath: '/courses/'
+      preLoaderRoute: typeof PublicCoursesIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/practice/$lessonId': {
       id: '/_public/practice/$lessonId'
       path: '/practice/$lessonId'
@@ -443,46 +443,36 @@ declare module '@tanstack/react-router' {
     }
     '/_public/courses/$courseId': {
       id: '/_public/courses/$courseId'
-      path: '/$courseId'
+      path: '/courses/$courseId'
       fullPath: '/courses/$courseId'
       preLoaderRoute: typeof PublicCoursesCourseIdRouteImport
-      parentRoute: typeof PublicCoursesRoute
+      parentRoute: typeof PublicRoute
     }
   }
 }
-
-interface PublicCoursesRouteChildren {
-  PublicCoursesCourseIdRoute: typeof PublicCoursesCourseIdRoute
-}
-
-const PublicCoursesRouteChildren: PublicCoursesRouteChildren = {
-  PublicCoursesCourseIdRoute: PublicCoursesCourseIdRoute,
-}
-
-const PublicCoursesRouteWithChildren = PublicCoursesRoute._addFileChildren(
-  PublicCoursesRouteChildren,
-)
 
 interface PublicRouteChildren {
   PublicAboutRoute: typeof PublicAboutRoute
   PublicBlogRoute: typeof PublicBlogRoute
   PublicContactRoute: typeof PublicContactRoute
-  PublicCoursesRoute: typeof PublicCoursesRouteWithChildren
   PublicFaqRoute: typeof PublicFaqRoute
   PublicTestimonialsRoute: typeof PublicTestimonialsRoute
   PublicIndexRoute: typeof PublicIndexRoute
+  PublicCoursesCourseIdRoute: typeof PublicCoursesCourseIdRoute
   PublicPracticeLessonIdRoute: typeof PublicPracticeLessonIdRoute
+  PublicCoursesIndexRoute: typeof PublicCoursesIndexRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
   PublicAboutRoute: PublicAboutRoute,
   PublicBlogRoute: PublicBlogRoute,
   PublicContactRoute: PublicContactRoute,
-  PublicCoursesRoute: PublicCoursesRouteWithChildren,
   PublicFaqRoute: PublicFaqRoute,
   PublicTestimonialsRoute: PublicTestimonialsRoute,
   PublicIndexRoute: PublicIndexRoute,
+  PublicCoursesCourseIdRoute: PublicCoursesCourseIdRoute,
   PublicPracticeLessonIdRoute: PublicPracticeLessonIdRoute,
+  PublicCoursesIndexRoute: PublicCoursesIndexRoute,
 }
 
 const PublicRouteWithChildren =
@@ -522,13 +512,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
