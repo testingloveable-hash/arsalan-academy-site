@@ -45,7 +45,7 @@ function PracticeDemo() {
   const lessons = useStore((s) => s.lessons);
   const course = useStore((s) => s.courses.find((c) => c.id === lesson?.courseId));
   const email = useStore((s) => s.settings.email);
-  const { session, role } = useAuth();
+  const { session, role, fullName } = useAuth();
   const isStudent = !!session && role !== "admin";
   const issueCert = useServerFn(issueCertificateForCompletion);
   const markCompleteFn = useServerFn(markLessonComplete);
@@ -95,15 +95,40 @@ function PracticeDemo() {
   const embedUrl = toEmbedUrl(lesson.videoUrl);
 
   const onQuizComplete = async (score: number, total: number) => {
-    if (!isFinalLesson) return;
-    if (score !== total || total === 0) return;
-    if (firedRef.current) return;
-    if (!session || role === "admin") return;
+    console.log("[Certificate] onQuizComplete", { score, total, isFinalLesson, lessonId, courseId: course?.id });
+    if (!isFinalLesson) {
+      console.log("[Certificate] skipped — not final lesson");
+      return;
+    }
+    if (total === 0) {
+      console.log("[Certificate] skipped — no quiz questions");
+      return;
+    }
+    if (score !== total) {
+      console.log("[Certificate] skipped — quiz not passed with 100%", { score, total });
+      toast.info(`You scored ${score}/${total}. Pass with 100% to earn your certificate.`);
+      return;
+    }
+    if (firedRef.current) {
+      console.log("[Certificate] skipped — already fired this session");
+      return;
+    }
+    if (!session || role === "admin") {
+      console.log("[Certificate] skipped — no student session", { hasSession: !!session, role });
+      return;
+    }
     firedRef.current = true;
+    toast.success("Certificate will be emailed to you shortly!");
+    console.log("[Certificate] calling issueCertificateForCompletion", {
+      courseId: course.id,
+      courseCode: course.code || "GEN",
+      courseTitle: course.title,
+    });
     try {
       const res = await issueCert({
         data: { courseId: course.id, courseCode: course.code || "GEN", courseTitle: course.title },
       });
+      console.log("[Certificate] issued successfully", res);
       toast.success(
         res.alreadyIssued
           ? `Certificate ${res.number} re-sent to your email.`
@@ -112,7 +137,7 @@ function PracticeDemo() {
     } catch (e: unknown) {
       firedRef.current = false;
       const msg = e instanceof Error ? e.message : "Could not issue certificate";
-      console.error("[Certificate auto-issue] failed:", e);
+      console.error("[Certificate] auto-issue failed:", e);
       toast.error(msg);
     }
   };
@@ -201,7 +226,16 @@ function PracticeDemo() {
               : "Reinforce what you just watched. Choose chat practice or a quick quiz."}
           </p>
           <div className="mt-4">
-            <PracticePanel lesson={lesson} timeLimit={course.dailyTimeLimit} adminEmail={email} onQuizComplete={onQuizComplete} />
+            <PracticePanel
+              lesson={lesson}
+              timeLimit={course.dailyTimeLimit || 60}
+              adminEmail={email}
+              onQuizComplete={onQuizComplete}
+              isFinalLesson={isFinalLesson}
+              studentName={fullName || session?.user?.email?.split("@")[0] || ""}
+              studentEmail={session?.user?.email || ""}
+              courseTitle={course.title}
+            />
           </div>
         </div>
       )}
