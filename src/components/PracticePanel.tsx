@@ -3,6 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Bot, CheckCircle2, XCircle, Timer, Send, Lock, Mail } from "lucide-react";
 import type { Lesson } from "@/lib/store";
 
@@ -11,16 +20,31 @@ interface Props {
   timeLimit: number; // minutes
   adminEmail: string;
   onQuizComplete?: (score: number, total: number) => void;
+  isFinalLesson?: boolean;
+  studentName?: string;
+  studentEmail?: string;
+  courseTitle?: string;
 }
 
 type Msg = { role: "bot" | "user"; text: string };
 
-export function PracticePanel({ lesson, timeLimit, adminEmail, onQuizComplete }: Props) {
+export function PracticePanel({
+  lesson,
+  timeLimit,
+  adminEmail,
+  onQuizComplete,
+  isFinalLesson,
+  studentName,
+  studentEmail,
+  courseTitle,
+}: Props) {
   const modes: ("chatbot" | "quiz")[] = [];
   if (lesson.chatbotEnabled) modes.push("chatbot");
   if (lesson.quizEnabled) modes.push("quiz");
   const [mode, setMode] = useState<"chatbot" | "quiz">(modes[0] ?? "chatbot");
   const [secondsLeft, setSecondsLeft] = useState(timeLimit * 60);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [extraMinutes, setExtraMinutes] = useState(30);
 
   useEffect(() => {
     const t = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
@@ -32,6 +56,14 @@ export function PracticePanel({ lesson, timeLimit, adminEmail, onQuizComplete }:
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const ss = String(secondsLeft % 60).padStart(2, "0");
 
+  const buildMailto = () => {
+    const subject = encodeURIComponent("Extra Practice Time Request");
+    const body = encodeURIComponent(
+      `Dear Sir,\n\nI would like to request extra practice time.\n\nStudent Name: ${studentName || "[Your Name]"}\nEmail: ${studentEmail || "[Your Email]"}\nCourse: ${courseTitle || "[Course]"}\nLesson: ${lesson.title}\nExtra Time Needed: ${extraMinutes} minutes\n\nThank you.`,
+    );
+    return `mailto:${adminEmail || "arsalanmunir25@gmail.com"}?subject=${subject}&body=${body}`;
+  };
+
   if (modes.length === 0) {
     return (
       <Card className="p-6 text-sm text-muted-foreground">
@@ -40,18 +72,26 @@ export function PracticePanel({ lesson, timeLimit, adminEmail, onQuizComplete }:
     );
   }
 
-  if (secondsLeft === 0) {
+  // Do not block the final lesson's quiz on daily time limit — students must be able to finish the course.
+  if (secondsLeft === 0 && !isFinalLesson) {
     return (
-      <Card className="border-primary/30 bg-primary/5 p-8 text-center">
-        <Lock className="mx-auto h-10 w-10 text-primary" />
-        <h3 className="mt-3 text-lg font-semibold">Your daily practice time is used up</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Need more time? Email the academy to request an extension.</p>
-        <Button asChild className="mt-4">
-          <a href={`mailto:${adminEmail}?subject=Extra practice time request`}>
+      <>
+        <Card className="border-primary/30 bg-primary/5 p-8 text-center">
+          <Lock className="mx-auto h-10 w-10 text-primary" />
+          <h3 className="mt-3 text-lg font-semibold">Your daily practice time is used up</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Need more time? Send a quick request to the academy.</p>
+          <Button className="mt-4" onClick={() => setRequestOpen(true)}>
             <Mail className="mr-2 h-4 w-4" /> Request extra time
-          </a>
-        </Button>
-      </Card>
+          </Button>
+        </Card>
+        <RequestTimeDialog
+          open={requestOpen}
+          onOpenChange={setRequestOpen}
+          extraMinutes={extraMinutes}
+          setExtraMinutes={setExtraMinutes}
+          mailto={buildMailto()}
+        />
+      </>
     );
   }
 
@@ -71,9 +111,17 @@ export function PracticePanel({ lesson, timeLimit, adminEmail, onQuizComplete }:
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Timer className="h-4 w-4" />
-          <span>{mm}:{ss} left today</span>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Timer className="h-4 w-4" />
+            <span>{mm}:{ss} left today</span>
+          </div>
+          <button
+            onClick={() => setRequestOpen(true)}
+            className="rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-accent"
+          >
+            Request extra time
+          </button>
         </div>
       </div>
       <div className="px-4 pt-2">
@@ -82,7 +130,60 @@ export function PracticePanel({ lesson, timeLimit, adminEmail, onQuizComplete }:
       <div className="p-4">
         {mode === "chatbot" ? <ChatMode lesson={lesson} /> : <QuizMode lesson={lesson} onComplete={onQuizComplete} />}
       </div>
+      <RequestTimeDialog
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        extraMinutes={extraMinutes}
+        setExtraMinutes={setExtraMinutes}
+        mailto={buildMailto()}
+      />
     </Card>
+  );
+}
+
+function RequestTimeDialog({
+  open,
+  onOpenChange,
+  extraMinutes,
+  setExtraMinutes,
+  mailto,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  extraMinutes: number;
+  setExtraMinutes: (n: number) => void;
+  mailto: string;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Request extra practice time</DialogTitle>
+          <DialogDescription>
+            How many extra minutes do you need? We'll open your email app with the request pre-filled.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 py-2">
+          <Label htmlFor="extra-min">Extra minutes</Label>
+          <Input
+            id="extra-min"
+            type="number"
+            min={5}
+            max={480}
+            value={extraMinutes}
+            onChange={(e) => setExtraMinutes(Math.max(1, Number(e.target.value) || 0))}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button asChild onClick={() => onOpenChange(false)}>
+            <a href={mailto}>
+              <Mail className="mr-2 h-4 w-4" /> Send Request
+            </a>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
