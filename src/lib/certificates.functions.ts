@@ -13,6 +13,7 @@ export const issueCertificateForCompletion = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => IssueSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    console.log("[cert.issue] start", { userId, courseId: data.courseId, courseCode: data.courseCode });
 
     const { data: profile, error: profErr } = await supabase
       .from("profiles")
@@ -64,6 +65,7 @@ export const issueCertificateForCompletion = createServerFn({ method: "POST" })
     }
 
     try {
+      console.log("[cert.issue] building PDF for", cert.number);
       const { buildCertificatePdf, sendCertificateEmail } = await import("./certificates.server");
       const pdf = await buildCertificatePdf({
         studentName,
@@ -71,6 +73,7 @@ export const issueCertificateForCompletion = createServerFn({ method: "POST" })
         completionDate: cert.completion_date,
         number: cert.number,
       });
+      console.log("[cert.issue] sending email to", profile.email, "size", pdf.byteLength);
       await sendCertificateEmail({
         to: profile.email,
         studentName,
@@ -78,6 +81,7 @@ export const issueCertificateForCompletion = createServerFn({ method: "POST" })
         number: cert.number,
         pdf,
       });
+      console.log("[cert.issue] email sent for", cert.number);
       await supabaseAdmin
         .from("certificates")
         .update({ email_sent_at: new Date().toISOString(), email_status: "sent" })
@@ -85,6 +89,7 @@ export const issueCertificateForCompletion = createServerFn({ method: "POST" })
       return { number: cert.number, sent: true, alreadyIssued: !!existing };
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "unknown";
+      console.error("[cert.issue] email failed:", msg, e);
       await supabaseAdmin
         .from("certificates")
         .update({ email_status: `error: ${msg}`.slice(0, 300) })
