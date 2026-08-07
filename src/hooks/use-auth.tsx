@@ -23,14 +23,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function loadRoleAndProfile(userId: string) {
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("full_name, role")
       .eq("id", userId)
       .maybeSingle();
-    const r = (profile as { role?: string } | null)?.role;
+    if (error || !profile) {
+      // Don't guess a role on failure — a wrong "student" guess bounces admins away from /admin.
+      console.error("[Auth] profile load failed:", error);
+      return;
+    }
+    const r = (profile as { role?: string }).role;
     setRole(r === "admin" ? "admin" : "student");
-    setFullName(profile?.full_name ?? "");
+    setFullName(profile.full_name ?? "");
   }
 
   useEffect(() => {
