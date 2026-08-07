@@ -187,7 +187,7 @@ function CertificatesAdmin() {
         const { buildCertificatePdf } = await import("@/lib/certificate-pdf");
         const bytes = await buildCertificatePdf({
           studentName,
-          courseTitle: selectedCourse?.title ?? "",
+          courseTitle: course?.title ?? "",
           completionDate,
           number: certificateNumber,
         });
