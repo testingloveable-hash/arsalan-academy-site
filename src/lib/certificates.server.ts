@@ -1,7 +1,5 @@
 export { buildCertificatePdf } from "./certificate-pdf";
 export type { CertPdfInput } from "./certificate-pdf";
-import { buildCertificatePdf } from "./certificate-pdf";
-void buildCertificatePdf;
 
 function toBase64(bytes: Uint8Array): string {
   let bin = "";
