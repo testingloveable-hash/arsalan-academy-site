@@ -35,6 +35,19 @@ function CoursesPage() {
           </button>
         ))}
       </div>
+      {filtered.length === 0 ? (
+        <div className="mt-10 rounded-xl border border-dashed bg-white p-12 text-center">
+          <h2 className="text-xl font-semibold text-[color:var(--brand-navy)]">No courses available yet</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            {courses.length === 0
+              ? "New programmes are being prepared. Please check back soon or get in touch to register your interest."
+              : "No courses match this category right now."}
+          </p>
+          <Button asChild className="mt-6 bg-[color:var(--brand-blue)] hover:bg-[color:var(--brand-blue)]/90">
+            <Link to="/contact">Contact us</Link>
+          </Button>
+        </div>
+      ) : (
       <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((c) => (
           <Card key={c.id} className="flex flex-col overflow-hidden py-0 transition-all hover:-translate-y-1 hover:shadow-xl">
@@ -59,6 +72,7 @@ function CoursesPage() {
           </Card>
         ))}
       </div>
+      )}
     </div>
   );
 }

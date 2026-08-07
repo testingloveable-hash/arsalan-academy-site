@@ -141,39 +141,66 @@ function CertificatesAdmin() {
   const handlePdf = async () => {
     if (!guard() || busy) return;
     setBusy("pdf");
+    const fileName = `Certificate-${safe(studentName)}-${safe(certificateNumber)}.pdf`;
     try {
-      const { default: html2canvas } = await import("html2canvas");
-      const { jsPDF } = await import("jspdf");
-      const element = document.getElementById("certificate-preview");
-      if (!element) throw new Error("Certificate preview not found");
-      if ((document as any).fonts?.ready) {
-        try { await (document as any).fonts.ready; } catch { /* ignore */ }
-      }
-      // Neutralize CSS scale during capture so full 1123x794 is rendered
-      const prevTransform = element.style.transform;
-      const prevOrigin = element.style.transformOrigin;
-      element.style.transform = "none";
-      element.style.transformOrigin = "top left";
-      let canvas;
+      let saved = false;
+      // Preferred: pixel-perfect capture of the live preview.
       try {
-        canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: "#ffffff",
-          width: 1123,
-          height: 794,
-          windowWidth: 1123,
-          windowHeight: 794,
-        });
-      } finally {
-        element.style.transform = prevTransform;
-        element.style.transformOrigin = prevOrigin;
+        const { default: html2canvas } = await import("html2canvas");
+        const { jsPDF } = await import("jspdf");
+        const element = document.getElementById("certificate-preview");
+        if (!element) throw new Error("Certificate preview not found");
+        if ((document as any).fonts?.ready) {
+          try { await (document as any).fonts.ready; } catch { /* ignore */ }
+        }
+        const prevTransform = element.style.transform;
+        const prevOrigin = element.style.transformOrigin;
+        element.style.transform = "none";
+        element.style.transformOrigin = "top left";
+        let canvas;
+        try {
+          canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: "#ffffff",
+            width: 1123,
+            height: 794,
+            windowWidth: 1123,
+            windowHeight: 794,
+          });
+        } finally {
+          element.style.transform = prevTransform;
+          element.style.transformOrigin = prevOrigin;
+        }
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        pdf.addImage(imgData, "PNG", 0, 0, 297, 210);
+        pdf.save(fileName);
+        saved = true;
+      } catch (captureErr) {
+        console.warn("[Certificate PDF] canvas capture failed, using vector fallback:", captureErr);
       }
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-      pdf.addImage(imgData, "PNG", 0, 0, 297, 210);
-      pdf.save(`Certificate-${safe(studentName)}-${safe(certificateNumber)}.pdf`);
+
+      if (!saved) {
+        // Fallback: build the PDF directly (works even when the browser can't rasterize modern CSS colors).
+        const { buildCertificatePdf } = await import("@/lib/certificate-pdf");
+        const bytes = await buildCertificatePdf({
+          studentName,
+          courseTitle: course?.title ?? "",
+          completionDate,
+          number: certificateNumber,
+        });
+        const blob = new Blob([bytes as unknown as BlobPart], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
       await persist();
       toast.success("PDF downloaded");
     } catch (e: any) {

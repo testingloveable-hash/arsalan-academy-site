@@ -44,19 +44,20 @@ function LoginPage() {
       setErr("Login succeeded but no user was returned.");
       return;
     }
-    const { data: profile, error: profileErr } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", data.user.id)
-      .single();
-    setBusy(false);
-    if (profileErr) {
-      console.error("[Login] profile fetch error:", profileErr);
-      setErr(`Signed in, but failed to load profile: ${profileErr.message}`);
-      return;
+    let role: string | undefined;
+    for (let attempt = 0; attempt < 3 && !role; attempt++) {
+      const { data: profile, error: profileErr } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (profileErr) console.error("[Login] profile fetch error:", profileErr);
+      role = (profile as { role?: string } | null)?.role;
+      if (!role) await new Promise((r) => setTimeout(r, 300));
     }
-    console.log("[Login] profile:", profile);
-    if (profile?.role === "admin") nav({ to: "/admin", replace: true });
+    setBusy(false);
+    console.log("[Login] resolved role:", role);
+    if (role === "admin") nav({ to: "/admin", replace: true });
     else nav({ to: "/dashboard", replace: true });
   }
 
