@@ -9,9 +9,9 @@ export function Footer() {
     <footer className="mt-24 border-t border-border bg-[color:var(--brand-navy)] text-white">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4 md:px-8">
         <div>
-          <div className="inline-block rounded-lg bg-white p-3">
+          <Link to="/" className="inline-block rounded-lg bg-white p-3" aria-label="Arsalan Academy home">
             <Logo className="h-12 w-auto" />
-          </div>
+          </Link>
           <p className="mt-4 text-sm text-white/70">Speak with confidence. Unlock your future.</p>
         </div>
         <div>

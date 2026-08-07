@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Award, Users, Trophy, GraduationCap, PlayCircle, MessageCircle, Sparkles, Phone, Mail } from "lucide-react";
+import { ArrowRight, Award, Trophy, CirclePlay as PlayCircle, MessageCircle, Sparkles, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,41 +49,12 @@ function Home() {
               alt="Student studying English"
               className="relative h-[420px] w-full rounded-2xl object-cover shadow-2xl"
             />
-            <div className="absolute -bottom-5 -right-5 hidden rounded-xl bg-white p-4 shadow-xl ring-1 ring-border md:block">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-[color:var(--brand-blue)]/10 p-2"><Trophy className="h-5 w-5 text-[color:var(--brand-blue)]" /></div>
-                <div>
-                  <p className="text-2xl font-bold text-[color:var(--brand-navy)]">Band 7+</p>
-                  <p className="text-xs text-muted-foreground">Average IELTS result</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* TRUST STRIP */}
-      <section className="border-b border-border bg-[color:var(--brand-navy)] text-white">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 py-10 md:grid-cols-4 md:px-8">
-          {[
-            { icon: Award, label: "CELTA Qualified", value: "Cambridge Certified" },
-            { icon: Users, label: "Students Trained", value: "1,200+" },
-            { icon: Trophy, label: "IELTS Pass Rate", value: "94%" },
-            { icon: GraduationCap, label: "Years Teaching", value: "10+" },
-          ].map((s) => (
-            <div key={s.label} className="flex items-center gap-3">
-              <s.icon className="h-8 w-8 text-[color:var(--brand-blue)]" />
-              <div>
-                <p className="text-xl font-bold">{s.value}</p>
-                <p className="text-xs text-white/70">{s.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* FEATURED COURSES */}
-      <section className="mx-auto max-w-7xl px-4 py-20 md:px-8">
+      {featured.length > 0 && <section className="mx-auto max-w-7xl px-4 py-20 md:px-8">
         <div className="mb-10 flex items-end justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-[color:var(--brand-blue)]">Programs</p>
@@ -111,7 +82,7 @@ function Home() {
             </Link>
           ))}
         </div>
-      </section>
+      </section>}
 
       {/* HOW IT WORKS */}
       <section className="border-y border-border bg-muted/40">
@@ -154,9 +125,8 @@ function Home() {
             <h2 className="mt-2 text-4xl font-bold text-[color:var(--brand-navy)]">Arsalan Munir</h2>
             <p className="mt-1 text-sm text-muted-foreground">CELTA Qualified · Founder & Lead Trainer</p>
             <p className="mt-6 text-base leading-relaxed text-foreground/80">
-              With over a decade of teaching experience and a Cambridge CELTA qualification, Arsalan has coached
-              hundreds of students to top IELTS/TOEFL scores, A* grades in O & A Level English, and full confidence
-              in spoken English. His approach is practical, patient, and focused on real communication.
+              With a Cambridge CELTA qualification, Arsalan helps learners build practical English skills for exams,
+              education, work, and everyday communication. His approach is patient, focused, and built around real progress.
             </p>
             <Button asChild className="mt-6 bg-[color:var(--brand-navy)] hover:bg-[color:var(--brand-navy)]/90">
               <Link to="/about">Read the story</Link>
@@ -166,7 +136,7 @@ function Home() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="border-t border-border bg-muted/40">
+      {testimonials.length > 0 && <section className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-7xl px-4 py-20 md:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold uppercase tracking-wider text-[color:var(--brand-blue)]">Student stories</p>
@@ -183,7 +153,7 @@ function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* CTA BAND */}
       <section className="mx-auto my-20 max-w-7xl px-4 md:px-8">

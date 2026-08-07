@@ -78,7 +78,10 @@ interface State {
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-const defaultCourses: Course[] = [
+const defaultCourses: Course[] = [];
+
+/*
+const seededCourses: Course[] = [
   {
     id: "c1",
     title: "IELTS Academic — Band 7+ Intensive",
@@ -171,7 +174,12 @@ const defaultCourses: Course[] = [
   },
 ];
 
-const defaultLessons: Lesson[] = [
+*/
+
+const defaultLessons: Lesson[] = [];
+
+/*
+const seededLessons: Lesson[] = [
   {
     id: "l1",
     courseId: "c3",
@@ -240,11 +248,18 @@ const defaultLessons: Lesson[] = [
   },
 ];
 
-const defaultTestimonials: Testimonial[] = [
+*/
+
+const defaultTestimonials: Testimonial[] = [];
+
+/*
+const seededTestimonials: Testimonial[] = [
   { id: "t1", name: "Ayesha K.", course: "IELTS Academic", quote: "Scored 7.5 overall on my first attempt. The daily practice chatbot kept me consistent.", rating: 5 },
   { id: "t2", name: "Hamza R.", course: "O Level English", quote: "My essay writing improved from a C to an A* in three months. Sir Arsalan is patient and precise.", rating: 5 },
   { id: "t3", name: "Fatima S.", course: "Functional English", quote: "I finally speak English without hesitation at work. The quizzes made grammar stick.", rating: 5 },
 ];
+
+*/
 
 const defaultSettings: SiteSettings = {
   heroHeadline: "Unlock Your Future",
