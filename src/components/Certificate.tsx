@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import { Calendar } from "lucide-react";
-import logoAsset from "@/assets/arsalan-logo.asset.json";
+
+const logoSrc = "/assets/images/1784044475344.jpg";
 
 export interface CertificateData {
   studentName: string;
@@ -85,7 +86,7 @@ export const Certificate = forwardRef<HTMLDivElement, { data: CertificateData; s
 
           {/* Content */}
           <div className="relative flex h-full flex-col items-center px-24 pt-20 pb-16 text-center">
-            <img src={logoAsset.url} alt="Arsalan Academy" style={{ height: 88, width: "auto" }} crossOrigin="anonymous" />
+            <img src={logoSrc} alt="Arsalan Academy" style={{ height: 88, width: "auto" }} crossOrigin="anonymous" />
 
             <p
               className="mt-6 text-xs uppercase text-[#1E5AFF]"

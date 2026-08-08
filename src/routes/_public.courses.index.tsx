@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES, useStore, type Category } from "@/lib/store";
+import { useStore, type Category } from "@/lib/store";
 
 export const Route = createFileRoute("/_public/courses/")({
   component: CoursesPage,
@@ -13,6 +13,10 @@ export const Route = createFileRoute("/_public/courses/")({
 function CoursesPage() {
   const courses = useStore((s) => s.courses);
   const [filter, setFilter] = useState<Category | "All">("All");
+
+  const categoriesWithCourses = Array.from(
+    new Set(courses.map((c) => c.category)),
+  ) as Category[];
   const filtered = filter === "All" ? courses : courses.filter((c) => c.category === filter);
 
   return (
@@ -23,7 +27,7 @@ function CoursesPage() {
         <p className="mt-4 text-muted-foreground">Structured, CELTA-informed programs with daily practice built in.</p>
       </div>
       <div className="mt-8 flex flex-wrap gap-2">
-        {(["All", ...CATEGORIES] as const).map((c) => (
+        {(["All", ...categoriesWithCourses] as const).map((c) => (
           <button
             key={c}
             onClick={() => setFilter(c)}
@@ -35,19 +39,6 @@ function CoursesPage() {
           </button>
         ))}
       </div>
-      {filtered.length === 0 ? (
-        <div className="mt-10 rounded-xl border border-dashed bg-white p-12 text-center">
-          <h2 className="text-xl font-semibold text-[color:var(--brand-navy)]">No courses available yet</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            {courses.length === 0
-              ? "New programmes are being prepared. Please check back soon or get in touch to register your interest."
-              : "No courses match this category right now."}
-          </p>
-          <Button asChild className="mt-6 bg-[color:var(--brand-blue)] hover:bg-[color:var(--brand-blue)]/90">
-            <Link to="/contact">Contact us</Link>
-          </Button>
-        </div>
-      ) : (
       <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((c) => (
           <Card key={c.id} className="flex flex-col overflow-hidden py-0 transition-all hover:-translate-y-1 hover:shadow-xl">
@@ -72,7 +63,6 @@ function CoursesPage() {
           </Card>
         ))}
       </div>
-      )}
     </div>
   );
 }
