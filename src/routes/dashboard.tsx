@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { BookOpen, LogOut, ArrowRight, PlayCircle } from "lucide-react";
+import { BookOpen, LogOut, ArrowRight, PlayCircle, Award } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { listMyEnrollments } from "@/lib/enrollments.functions";
 import { supabase } from "@/integrations/supabase/client";
