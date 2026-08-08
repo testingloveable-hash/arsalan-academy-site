@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { BookOpen, LogOut, ArrowRight, PlayCircle } from "lucide-react";
+import { BookOpen, LogOut, ArrowRight, PlayCircle, Award } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { listMyEnrollments } from "@/lib/enrollments.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +54,20 @@ function Dashboard() {
     },
     enabled: enrolledCourseIds.length > 0,
   });
+
+  const certificatesQ = useQuery({
+    queryKey: ["my-certificates", session?.user.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("certificates")
+        .select("id, number, course_title, completion_date")
+        .order("issued_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as { id: string; number: string; course_title: string; completion_date: string }[];
+    },
+    enabled: !!session && role !== "admin",
+  });
+
 
   async function handleLogout() {
     await signOut();
@@ -151,7 +165,36 @@ function Dashboard() {
               </div>
             )}
           </section>
+
+          <section className="mt-12">
+            <h2 className="text-xl font-semibold">My Certificates</h2>
+            {certificatesQ.isLoading ? (
+              <Card className="mt-4 p-10 text-center text-sm text-muted-foreground">Loading certificates…</Card>
+            ) : (certificatesQ.data ?? []).length === 0 ? (
+              <Card className="mt-4 border-dashed p-10 text-center">
+                <Award className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">
+                  No certificates yet. Finish a course to earn your first one.
+                </p>
+              </Card>
+            ) : (
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {(certificatesQ.data ?? []).map((c) => (
+                  <Card key={c.id} className="flex items-center gap-4 p-5">
+                    <Award className="h-8 w-8 shrink-0 text-[color:var(--brand-blue)]" />
+                    <div>
+                      <p className="font-semibold text-[color:var(--brand-navy)]">{c.course_title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {c.number} · Completed {c.completion_date}
+                      </p>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
+
       </main>
       <Footer />
     </div>
