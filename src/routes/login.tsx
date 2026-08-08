@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, fetchProfile } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,16 @@ import { Logo } from "@/components/Logo";
 export const Route = createFileRoute("/login")({
   component: LoginPage,
   ssr: false,
-  head: () => ({ meta: [{ title: "Login — Arsalan Academy" }] }),
+  head: () => ({
+    meta: [
+      { title: "Login — Arsalan Academy" },
+      { name: "description", content: "Sign in to your Arsalan Academy account to continue your English course." },
+      { property: "og:title", content: "Login — Arsalan Academy" },
+      { property: "og:description", content: "Sign in to your Arsalan Academy account to continue your English course." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 function LoginPage() {
@@ -22,58 +31,30 @@ function LoginPage() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Only redirect once BOTH the session and the profile role have resolved.
   useEffect(() => {
-    if (!loading && session && role) {
-      nav({ to: role === "admin" ? "/admin" : "/dashboard", replace: true });
-    }
+    if (loading || !session || !role) return;
+    nav({ to: role === "admin" ? "/admin" : "/dashboard", replace: true });
   }, [loading, session, role, nav]);
-
-  // Fallback: if session exists but role hasn't loaded yet, load it explicitly.
-  useEffect(() => {
-    if (!loading && session && !role) {
-      supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", session.user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          const r = (data as { role?: string } | null)?.role;
-          nav({ to: r === "admin" ? "/admin" : "/dashboard", replace: true });
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, session, role]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr("");
     setBusy(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      console.error("[Login] signInWithPassword error:", error);
+    if (error || !data.user) {
       setBusy(false);
-      setErr(`${error.message}${error.status ? ` (status ${error.status})` : ""}`);
+      setErr(error?.message ?? "Login failed — no user returned.");
       return;
     }
-    if (!data.user) {
-      setBusy(false);
-      setErr("Login succeeded but no user was returned.");
-      return;
-    }
-    const { data: profile, error: profileErr } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", data.user.id)
-      .single();
+    // Wait for the profile row (with retries) before deciding where to go.
+    const profile = await fetchProfile(data.user.id);
     setBusy(false);
-    if (profileErr) {
-      console.error("[Login] profile fetch error:", profileErr);
-      setErr(`Signed in, but failed to load profile: ${profileErr.message}`);
+    if (!profile) {
+      setErr("Signed in, but your profile could not be loaded. Please try again.");
       return;
     }
-    console.log("[Login] profile:", profile);
-    if (profile?.role === "admin") nav({ to: "/admin", replace: true });
-    else nav({ to: "/dashboard", replace: true });
+    nav({ to: profile.role === "admin" ? "/admin" : "/dashboard", replace: true });
   }
 
   return (
