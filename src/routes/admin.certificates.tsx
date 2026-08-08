@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Award, Download, FileText, Loader2, Mail, Printer, Trash2 } from "lucide-react";
+import { Award, Download, FileText, Loader as Loader2, Mail, Printer, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -159,7 +159,6 @@ function CertificatesAdmin() {
         canvas = await html2canvas(element, {
           scale: 2,
           useCORS: true,
-          allowTaint: true,
           backgroundColor: "#ffffff",
           width: 1123,
           height: 794,
