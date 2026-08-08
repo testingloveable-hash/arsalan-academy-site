@@ -144,6 +144,7 @@ function CertificatesAdmin() {
     try {
       const { default: html2canvas } = await import("html2canvas");
       const { jsPDF } = await import("jspdf");
+      const { sanitizeColors } = await import("@/lib/sanitize-colors");
       const element = document.getElementById("certificate-preview");
       if (!element) throw new Error("Certificate preview not found");
       if ((document as any).fonts?.ready) {
@@ -164,6 +165,14 @@ function CertificatesAdmin() {
           height: 794,
           windowWidth: 1123,
           windowHeight: 794,
+          onclone: (doc: Document) => {
+            const clone = doc.getElementById("certificate-preview");
+            if (clone) {
+              clone.style.transform = "none";
+              clone.style.transformOrigin = "top left";
+              sanitizeColors(clone as HTMLElement);
+            }
+          },
         });
       } finally {
         element.style.transform = prevTransform;
