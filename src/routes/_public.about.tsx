@@ -19,7 +19,7 @@ function About() {
 
       <div className="mt-14 grid gap-6 md:grid-cols-3">
         <Feature icon={<Target className="h-6 w-6" />} title="Mission" text="Unlock every student's potential through confident, correct, communicative English." />
-        <Feature icon={<Award className="h-6 w-6" />} title="Credentials" text="Led by Arsalan Munir — Cambridge CELTA qualified with 10+ years of teaching." />
+        <Feature icon={<Award className="h-6 w-6" />} title="Credentials" text="Led by Arsalan Munir — Cambridge CELTA qualified trainer." />
         <Feature icon={<Heart className="h-6 w-6" />} title="Philosophy" text="Practical over theoretical. Progress comes from daily practice, not memorization." />
       </div>
 
