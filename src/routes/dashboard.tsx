@@ -55,6 +55,20 @@ function Dashboard() {
     enabled: enrolledCourseIds.length > 0,
   });
 
+  const certificatesQ = useQuery({
+    queryKey: ["my-certificates", session?.user.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("certificates")
+        .select("id, number, course_title, completion_date")
+        .order("issued_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as { id: string; number: string; course_title: string; completion_date: string }[];
+    },
+    enabled: !!session && role !== "admin",
+  });
+
+
   async function handleLogout() {
     await signOut();
     nav({ to: "/login", replace: true });
